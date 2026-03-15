@@ -77,7 +77,7 @@ For each chart, evaluate against every item. Record PASS or FAIL with specifics.
 | 15 | **Slide font sizes** | All text on slides meets 16px minimum for screen-share. Title slides: h1 at 44px+. Nothing below 16px except footers/page numbers. |
 | 16 | **Theme consistency** | No mixed light/dark styles on a single slide. If dark theme, no light-mode colors inline. If light theme, no dark-mode backgrounds. |
 
-### Step 4: Run 5 gotcha checks per chart
+### Step 4: Run 6 gotcha checks per chart
 
 These catch issues that the general checklist misses:
 
@@ -88,6 +88,7 @@ These catch issues that the general checklist misses:
 | 3 | **Axis scale** | Is the axis starting at zero for bar charts? Is a truncated axis misleading the perceived magnitude of differences? |
 | 4 | **Missing context** | Does the chart stand alone without reading the narrative? Could a viewer understand the takeaway from the chart alone (title + subtitle + labels)? |
 | 5 | **Annotation accuracy** | If arrows/annotations point at data, do they point at the correct data point? Is the annotated value correct? |
+| 6 | **Title-data claim** | Does the action title make a quantitative claim that contradicts the chart's visible data? E.g., title says "65% of revenue" but the visible bar is clearly not 65%. Check that percentages, absolute numbers, and superlatives (highest, lowest) in the title are consistent with what the chart shows. |
 
 ### Step 5: Run 6 advanced technique checks
 
@@ -254,7 +255,7 @@ Criteria for NEEDS REVISION (any is sufficient):
 
 ### [Chart filename]
 **SWD Checklist**: [N/16 passed]
-**Gotcha Checks**: [N/5 passed]
+**Gotcha Checks**: [N/6 passed]
 **Advanced Technique Checks**: [N/6 passed or N/A]
 
 [List any FAIL items with brief description]
@@ -275,7 +276,7 @@ Criteria for NEEDS REVISION (any is sufficient):
 
 ## Validation
 1. **Completeness**: Every chart in {{CHART_FILES}} must be reviewed. No chart skipped.
-2. **Checklist coverage**: All 16 SWD checks, 5 gotcha checks, and 6 advanced technique checks must be evaluated for every chart. Checks that don't apply should be marked N/A with explanation. Slide-level checks (15-16) only apply when {{DECK_FILE}} is provided.
+2. **Checklist coverage**: All 16 SWD checks, 6 gotcha checks, and 6 advanced technique checks must be evaluated for every chart. Checks that don't apply should be marked N/A with explanation. Slide-level checks (15-16) only apply when {{DECK_FILE}} is provided.
 3. **Fix specificity**: Every FAIL item must have a corresponding fix entry. Every fix must include specific code or approach — no vague directives.
 4. **Verdict consistency**: The verdict must match the findings. If any critical issue exists, verdict cannot be APPROVED. If all issues are minor, verdict cannot be NEEDS REVISION.
 5. **Rationale traceability**: Every fix must reference which check it addresses. Every check must reference the relevant standard from chart_style_guide.md.
