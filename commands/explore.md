@@ -1,8 +1,9 @@
 ---
-description: Quick interactive data exploration — preview tables, check distributions, spot patterns
+description: Interactive data exploration — preview tables, check distributions, spot patterns
 argument-hint: "[table] [column]"
 ---
-# Skill: Explore Data
+
+# /explore
 
 ## Purpose
 Quick, interactive data exploration without the full pipeline. Lets users

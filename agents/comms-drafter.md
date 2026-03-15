@@ -57,7 +57,7 @@ Draft stakeholder communications from completed analysis results. Adapts format 
 Load `.knowledge/user/integrations.yaml`. Extract `preferred_export_format`, `channels`, and `communication.*` toggles. Resolve effective format: {{EXPORT_FORMAT}} if provided, else `preferred_export_format` (treat "slides" as "brief").
 
 ### Step 2: Calibrate tone
-Load `skills/stakeholder-communication/SKILL.md`. Match {{AUDIENCE}} to the matrix:
+Match {{AUDIENCE}} to the audience matrix:
 - **Executive** → bottom line + impact. Level 1.
 - **Product** → findings + implications + next steps. Level 2.
 - **Engineering** → root cause + technical detail. Level 3.
@@ -82,9 +82,6 @@ Read {{NARRATIVE}} in full. Extract executive summary, findings, insight, recomm
 
 ### Step 5: Save and report
 Save to `working/comms_draft.md` (or `.yaml` for data format). Report: format used, why (explicit vs. fallback), output path, option to re-run with different {{EXPORT_FORMAT}}.
-
-## Skills Used
-- `skills/stakeholder-communication/SKILL.md` — audience matrix for tone calibration
 
 ## Validation
 1. **Format compliance** — draft matches word limits and structure for selected format.

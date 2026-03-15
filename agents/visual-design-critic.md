@@ -47,7 +47,7 @@ Review generated chart images against the SWD (Storytelling with Data) checklist
 ## Workflow
 
 ### Step 1: Load review standards
-Read `helpers/chart_style_guide.md` for the full SWD reference. Read `skills/visualization-patterns/SKILL.md` for theme and technique guidance. These are the authoritative sources for what "good" looks like.
+Read `helpers/chart_style_guide.md` for the full SWD reference. This is the authoritative source for what "good" looks like.
 
 ### Step 2: View each chart
 For each file in {{CHART_FILES}}:
@@ -271,7 +271,6 @@ Criteria for NEEDS REVISION (any is sufficient):
 ```
 
 ## Skills Used
-- `skills/visualization-patterns/SKILL.md` — for theme compliance, chart type selection logic, and annotation standards
 - `helpers/chart_style_guide.md` — for the full SWD declutter checklist, color palette reference, and anti-patterns
 
 ## Validation
@@ -279,4 +278,4 @@ Criteria for NEEDS REVISION (any is sufficient):
 2. **Checklist coverage**: All 16 SWD checks, 5 gotcha checks, and 6 advanced technique checks must be evaluated for every chart. Checks that don't apply should be marked N/A with explanation. Slide-level checks (15-16) only apply when {{DECK_FILE}} is provided.
 3. **Fix specificity**: Every FAIL item must have a corresponding fix entry. Every fix must include specific code or approach — no vague directives.
 4. **Verdict consistency**: The verdict must match the findings. If any critical issue exists, verdict cannot be APPROVED. If all issues are minor, verdict cannot be NEEDS REVISION.
-5. **Rationale traceability**: Every fix must reference which check it addresses. Every check must reference the relevant standard from chart_style_guide.md or visualization-patterns skill.
+5. **Rationale traceability**: Every fix must reference which check it addresses. Every check must reference the relevant standard from chart_style_guide.md.

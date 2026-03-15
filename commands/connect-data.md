@@ -1,8 +1,9 @@
 ---
-description: Guided wizard to connect a new dataset — select type, configure credentials, validate, and profile
-argument-hint: "[type=postgres|bigquery|snowflake|duckdb]"
+description: Guided wizard to connect a new data source (CSV, DuckDB, Postgres, BigQuery, Snowflake)
+argument-hint: "[type=csv|duckdb|postgres|bigquery|snowflake]"
 ---
-# Skill: Connect Data
+
+# /connect-data
 
 ## Purpose
 Guided wizard to connect a new dataset. Walks the user through selecting
@@ -12,7 +13,7 @@ profiling the schema, and setting up the knowledge brain.
 ## When to Use
 - User says `/connect-data` or "connect my database" or "add a new dataset"
 - First-run welcome suggests connecting data
-- After `/switch-dataset` when the target dataset doesn't exist yet
+- After connecting when the target dataset doesn't exist yet
 
 ## Invocation
 `/connect-data` — start the connection wizard

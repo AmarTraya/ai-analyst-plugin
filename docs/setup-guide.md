@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **Python 3.10+** with pip
-- **Claude Code** CLI installed ([docs](https://docs.anthropic.com/en/docs/claude-code))
+- **Cowork** installed ([setup guide](https://claude.com/product/cowork))
 - Your data in CSV, DuckDB, or a supported warehouse (Postgres, BigQuery, Snowflake)
 
 ## Quick Start
@@ -16,11 +16,9 @@ cd ai-analyst
 pip install -e ".[dev]"
 ```
 
-### 2. Launch Claude Code
+### 2. Launch Cowork
 
-```bash
-claude
-```
+Open the Cowork app and add this directory as a plugin.
 
 ### 3. Connect your data
 

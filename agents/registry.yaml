@@ -352,22 +352,6 @@ agents:
     knowledge_context:
       - .knowledge/datasets/{active}/manifest.yaml
 
-  # ── Phase 8: Close the Loop ────────────────────────────────────────
-
-  - name: close-the-loop
-    file: skills/close-the-loop/SKILL.md
-    pipeline_step: 18
-    critical: true
-    depends_on:
-      - visual-design-critic-slides
-    inputs:
-      - ANALYSIS_RESULTS
-      - RECOMMENDATIONS
-      - DECK_FILE
-    outputs:
-      - outputs/close_the_loop_{{DATE}}.md
-    knowledge_context: []
-
   # ── Standalone (no pipeline_step) ─────────────────────────────────
 
   - name: experiment-designer

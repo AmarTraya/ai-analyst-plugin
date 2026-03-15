@@ -90,7 +90,7 @@ Before running any analysis, check data quality:
 
 **If {{DATA_INVENTORY}} is not provided:**
 - Run a quick data quality check: row count, null rates on key columns, date range, duplicate check
-- Apply the Data Quality Check skill (`skills/data-quality-check/SKILL.md`) at a summary level
+- Apply data quality checks at a summary level
 - If any BLOCKER-level issues are found, stop and report them before proceeding
 
 Write any data quality notes to `working/data_readiness_check.md`.
@@ -275,7 +275,7 @@ Combine the results from correlation, group comparison, and feature importance (
 - For each top driver, describe the relationship in plain English: "Users who [behavior] have [X%] higher [metric] than those who don't"
 
 ### Step 6: Generate Visualizations
-Apply the Visualization Patterns skill (`skills/visualization-patterns/SKILL.md`) to create charts for each finding.
+Create charts for each finding following the visualization standards.
 
 **Required charts:**
 1. **Segmentation chart**: Grouped bar chart or heatmap showing key metric by segment (one per segmentation dimension)
@@ -291,7 +291,7 @@ Apply the Visualization Patterns skill (`skills/visualization-patterns/SKILL.md`
 - Save to `working/charts/` as PNG files
 
 ### Step 7: Triangulate and Validate Findings
-Apply the Triangulation / Sanity Check skill (`skills/triangulation/SKILL.md`):
+Apply the Triangulation / Sanity Check skill (`skills/triangulation.md`):
 
 **Cross-reference checks:**
 - Do segment sizes add up to the total? (must be exact)
@@ -454,9 +454,7 @@ A markdown file saved to `outputs/analysis_report_{{DATE}}.md` with charts saved
 ```
 
 ## Skills Used
-- `skills/visualization-patterns/SKILL.md` — for all chart generation in Step 6, including theme selection, color palettes, annotation standards, and chart type selection logic
-- `skills/triangulation/SKILL.md` — for cross-referencing and sanity-checking all findings in Step 7, including order-of-magnitude checks and consistency validation
-- `skills/data-quality-check/SKILL.md` — for the data readiness validation in Step 2, using severity ratings to determine whether analysis can proceed
+- `skills/triangulation.md` — for cross-referencing and sanity-checking all findings in Step 7, including order-of-magnitude checks and consistency validation
 
 ## Validation
 Before presenting the analysis report, verify:

@@ -1,63 +1,56 @@
 ---
-description: Browse and search past analyses from the analysis archive
-argument-hint: "[analysis-id]"
+description: Browse past analyses and pipeline runs
+argument-hint: "[search=<term>] [--all]"
 ---
-# Skill: History
 
-## Purpose
-Browse and search past analyses from the analysis archive. Helps users
-recall what they've analyzed before, find prior findings, and build on
-previous work.
+# /history
 
-## When to Use
-- User says `/history` or "what have I analyzed before?"
-- At session start, to provide context on prior work
-- When framing a new question, to check if similar analysis exists
+## Analysis History
 
-## Invocation
-`/history` — list recent analyses (last 10)
-`/history {id}` — show full details for a specific analysis
-`/history search={term}` — search by title, question, or tags
-`/history --all` — list all analyses across all datasets
-`/history dataset={id}` — filter to a specific dataset
+### Usage
+- `/history` — list recent analyses (last 10)
+- `/history {id}` — show full details for a specific analysis
+- `/history search={term}` — search by title, question, or tags
+- `/history --all` — list all analyses across all datasets
 
-## Instructions
+### Instructions
 
-### Step 1: Load Archive
-1. Read `.knowledge/analyses/index.yaml`
-2. If empty: "No analyses archived yet. Complete an analysis and it will appear here."
+1. Read `.knowledge/analyses/index.yaml`. If empty: "No analyses archived yet."
+2. Filter to active dataset unless `--all` flag.
+3. Sort by date descending.
 
-### Step 2: Execute Command
+**List:** Show table: date, title, level, key finding count, dataset. "Showing 10 of {total}."
 
-**List recent (`/history`):**
-- Filter to active dataset (unless `--all` flag)
-- Sort by date descending
-- Show last 10 as a table: date, title, level, key finding count, dataset
-- Show total count: "Showing 10 of {total} analyses."
+**Detail (`/history {id}`):** Show title, date, question, level, all key findings, metrics used, agents used, output files, confidence.
 
-**Show specific (`/history {id}`):**
-- Find entry by ID in index
-- Display: title, date, question, level, all key findings, metrics used,
-  agents used, output files, tags, confidence, recommendations
-- If output files exist, offer: "Want to review the full analysis?"
+**Search:** Case-insensitive search across title, question, key_findings, tags.
 
-**Search (`/history search={term}`):**
-- Search across: title, question, key_findings, tags (case-insensitive)
-- Display matching entries as a table
-- If no matches: "No analyses match '{term}'. Try broader terms."
+After displaying, suggest: "Re-run with fresh data?" or "Build on finding #N?"
 
-**All datasets (`/history --all`):**
-- Include dataset_id column in output
-- Sort by date descending across all datasets
+## Pipeline Runs
 
-### Step 3: Contextual Suggestions
-After displaying history:
-- "Want to re-run this analysis with fresh data?"
-- "Want to build on finding #{n}?"
-- If recent analysis was partial: "This analysis was incomplete. Resume with `/resume-pipeline`."
+### Usage
+- `/runs` or `/runs list` — list all pipeline runs
+- `/runs latest` — most recent run details
+- `/runs {id}` — specific run details (partial match supported)
+- `/runs clean` — remove runs older than 30 days (confirmation required)
+- `/runs compare {id1} {id2}` — side-by-side comparison
+
+### Instructions
+
+1. Scan `working/runs/` — each subdirectory is a run named `{YYYY-MM-DD}_{DATASET}_{TITLE}/`
+2. Read `pipeline_state.json` from each for: pipeline_id, dataset, question, status, timing, agent counts.
+
+**List:** Table sorted by date: #, Date, Dataset, Title, Status, Agents (completed/total).
+
+**Detail:** Show directory name, status, dataset, question, timing, agent status map (completed/failed/skipped/pending), output files, confidence grade.
+
+**Clean:** List runs >30 days old, require confirmation before deletion.
+
+**Compare:** Load both runs' state. Show table: Date, Dataset, Status, Agents, Confidence, Charts, Findings, Duration.
 
 ## Edge Cases
-- **No active dataset:** Show all analyses or prompt to connect
-- **Archive file missing:** Create empty index
-- **Analysis output files deleted:** Note "output files no longer available"
-- **Very long history (>100):** Paginate, show 20 at a time
+- No archive → "No analyses archived. Complete one first."
+- No runs directory → "No pipeline runs found. Use `/run-pipeline`."
+- Corrupted state → Show with `status: unknown`
+- Partial match ambiguity → List matches, ask user to be specific

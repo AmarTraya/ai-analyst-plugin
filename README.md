@@ -2,14 +2,16 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Claude Code Required](https://img.shields.io/badge/requires-Claude%20Code-blueviolet.svg)](https://claude.ai/code)
+[![Cowork Plugin](https://img.shields.io/badge/requires-Cowork-blueviolet.svg)](https://claude.com/product/cowork)
 [![Tests](https://img.shields.io/badge/tests-606%20passing-brightgreen.svg)](#)
 
-A complete AI analyst system powered by Claude Code. You ask a business question. Claude frames it, explores your data, finds the root cause, builds a story, and hands you a branded slide deck with speaker notes. The whole thing takes minutes, not days.
+A Cowork plugin that turns Claude into a complete AI analyst. You ask a business question. Claude frames it, explores your data, finds the root cause, builds a story, and hands you a branded slide deck with speaker notes. The whole thing takes minutes, not days.
+
+> Also works with Claude Code — see [ai-analyst](https://github.com/ai-analyst-lab/ai-analyst) for the full Claude Code version.
 
 **Bring your own data.** No bundled datasets to configure — connect your CSVs, DuckDB, or warehouse with `/connect-data` and start analyzing immediately.
 
-**18** specialized agents | **39** auto-applied skills | **20** slash commands | DAG-based parallel execution | PDF + HTML export
+**18** specialized agents | **8** skills | **9** commands | DAG-based parallel execution | PDF + HTML export
 
 ---
 
@@ -49,29 +51,15 @@ Claude will tell you the exact command. You don't need to memorize anything in t
 
 ## Quick Start (Cowork Plugin)
 
-**1. Install Claude Code** (requires a [Claude Pro subscription](https://claude.ai/pro))
+**1. Install Cowork** (requires a [Claude Pro, Max, Team, or Enterprise plan](https://claude.ai/pro)) — [Cowork setup guide](https://claude.com/product/cowork)
 
-```bash
-npm install -g @anthropic-ai/claude-code
-```
+**2. Install the plugin**
 
-**2. Clone the plugin**
+Open Claude Desktop → **Cowork** tab → **Customize** → **Browse plugins** → Install **"AI Analyst"**
 
-```bash
-git clone https://github.com/ai-analyst-lab/ai-analyst.git
-cd ai-analyst
-pip install -e ".[dev]"
-```
+Or if you have the plugin folder locally: **Customize** → **Upload plugin**
 
-**3. Register as a Cowork plugin**
-
-Add the plugin to your Cowork workspace by pointing it at this directory. Cowork auto-discovers skills in `skills/` and commands in `commands/`. The plugin manifest lives at `.claude-plugin/plugin.json`.
-
-**4. Start Claude Code and connect your data**
-
-```bash
-claude
-```
+**3. Connect your data**
 
 ```
 /ai-analyst:connect-data
@@ -169,11 +157,7 @@ You don't have to run the whole thing. Five execution plans let you run just the
 /run-pipeline data_path=data/your_dataset/ question="..." plan=deep_dive
 ```
 
-If the pipeline gets interrupted, resume where you left off:
-
-```
-/resume-pipeline
-```
+If interrupted, just re-run the same `/run-pipeline` command — it auto-resumes from saved state.
 
 Preview what would run without executing:
 
@@ -214,26 +198,15 @@ Tier 6 (sequential)           Storytelling --> Deck Creator --> Slide Review -->
 
 | Command | What It Does | Example |
 |---------|-------------|---------|
-| `/run-pipeline` | Full analysis to slide deck | `/run-pipeline data_path=data/your_dataset/ question="Why is conversion dropping?"` |
-| `/resume-pipeline` | Resume interrupted pipeline | `/resume-pipeline` |
+| `/run-pipeline` | Full analysis to slide deck (includes resume) | `/run-pipeline question="Why is conversion dropping?"` |
 | `/explore` | Interactive data exploration | `/explore events` |
-| `/data` | Show active dataset schema | `/data users` |
-| `/datasets` | List all connected datasets | `/datasets` |
-| `/switch-dataset` | Change the active dataset | `/switch-dataset my_dataset` |
+| `/data-inspect` | Show schema, list datasets, switch active | `/data-inspect users` or `/data-inspect list` |
 | `/connect-data` | Add a new data source | `/connect-data` |
 | `/setup` | Interactive onboarding interview | `/setup` |
 | `/metrics` | Browse the metric dictionary | `/metrics conversion_rate` |
-| `/history` | View past analyses | `/history` |
-| `/patterns` | View recurring patterns | `/patterns --global` |
-| `/export` | Export results in various formats | `/export slides` or `/export email` or `/export slack` |
-| `/forecast` | Generate a time-series forecast | `/forecast` |
-| `/runs` | List, inspect, compare pipeline runs | `/runs` |
+| `/history` | View past analyses and pipeline runs | `/history` or `/runs` |
+| `/export` | Export results in various formats | `/export slides` or `/export email` |
 | `/business` | Browse organization knowledge | `/business glossary` |
-| `/log-correction` | Log a data or methodology correction | `/log-correction` |
-| `/architect` | Multi-persona planning methodology | `/architect` |
-| `/notion-ingest` | Import business context from Notion | `/notion-ingest` |
-| `/compare-datasets` | Compare metrics across datasets | `/compare-datasets` |
-| `/setup-dev-context` | Add codebase context for dev teams | `/setup-dev-context` |
 
 Or just ask in plain English. "Show me conversion by device" works as well as any command.
 
@@ -315,11 +288,10 @@ outputs/
   deck_<dataset>_YYYY-MM-DD.marp.md    # Slide deck (Marp source)
   deck_<dataset>_YYYY-MM-DD.pdf        # PDF export
   deck_<dataset>_YYYY-MM-DD.html       # HTML export (self-contained)
-  close_the_loop_YYYY-MM-DD.md         # Follow-up plan for recommendations
   charts/                               # All generated charts
 
 working/                                # Intermediate files (safe to delete)
-  pipeline_state.json                   # Pipeline progress (for /resume-pipeline)
+  pipeline_state.json                   # Pipeline progress (for auto-resume)
   pipeline_metrics.json                 # Execution timing and parallel efficiency
   storyboard_<dataset>.md              # Story beats + visual mapping
   design_review_<dataset>.md           # Chart quality review (16-point checklist)
@@ -335,22 +307,21 @@ working/                                # Intermediate files (safe to delete)
 
 | Want to... | Do this |
 |-----------|---------|
-| Change the persona/rules | Edit `skills/_persona.md` (identity, rules, data conventions) |
-| Change the workflow | Edit `skills/_workflow.md` (agent orchestration, default pipeline) |
-| Add a new skill | Create `skills/my-skill/SKILL.md` (auto-triggered by Cowork) |
-| Add a new command | Create `commands/my-command.md` (available as `/ai-analyst:my-command`) |
-| Add a new agent | Create `agents/my-agent.md` using `agents/CONTRACT_TEMPLATE.md` as a starting point |
+| Change the persona/rules | Edit `CLAUDE.md` (identity, rules, data conventions) |
+| Add a new skill | Create `skills/my-skill/SKILL.md` with frontmatter (auto-discovered by Cowork) |
+| Add a new command | Create `commands/my-command.md` with frontmatter (available as `/ai-analyst:my-command`) |
+| Add a new agent | Create `references/agents/my-agent.md` using `references/CONTRACT_TEMPLATE.md` |
 | Change the slide theme | Create a YAML theme in `themes/brands/` (see [docs/theming.md](docs/theming.md)) |
 | Add deck components | Edit `templates/marp_components.md` (snippet library) |
 | Modify the pipeline | Edit `commands/run-pipeline.md` (rules, checkpoints, execution) |
-| Add to the agent DAG | Edit `agents/registry.yaml` (dependencies, execution order) |
+| Add to the agent DAG | Edit `references/agents/registry.yaml` (dependencies, execution order) |
 
 ---
 
 <details>
 <summary><strong>All 18 Agents</strong> (click to expand)</summary>
 
-Agents are markdown prompt templates in the `agents/` directory. Each defines a multi-step workflow with `{{VARIABLES}}` that get filled in at runtime. To invoke one, ask Claude to run it or use `/run-pipeline` to orchestrate all of them.
+Agents are markdown prompt templates in the `references/agents/` directory. Each defines a multi-step workflow with `{{VARIABLES}}` that get filled in at runtime. To invoke one, ask Claude to run it or use `/run-pipeline` to orchestrate all of them.
 
 ### Framing
 
@@ -405,67 +376,22 @@ Agents are markdown prompt templates in the `agents/` directory. Each defines a 
 ---
 
 <details>
-<summary><strong>All 39 Skills</strong> (click to expand)</summary>
+<summary><strong>All 8 Skills</strong> (click to expand)</summary>
 
-Skills are instruction files in `skills/` that Claude follows automatically when a trigger condition matches (auto-discovered by Cowork). You don't invoke them manually. When you ask for a chart, the Visualization Patterns skill activates. When you start an analysis, the Data Quality Check skill runs.
-
-### Always Active
-
-These skills shape every interaction:
+Skills are instruction files in `skills/{name}/SKILL.md` that Cowork auto-discovers and applies when relevant. You don't invoke them manually.
 
 | Skill | What It Does |
 |-------|-------------|
-| analysis-design-spec | Ensures every analysis starts with a plan: question, decision, data needed, success criteria |
-| close-the-loop | Every recommendation gets a decision owner, success metric, follow-up date, and fallback plan |
-| data-quality-check | Validates data completeness and consistency before analysis begins |
-| data-profiling | Deep-profiles schema, distributions, temporal patterns, and anomalies |
-| feedback-capture | Captures user corrections and methodology guidance to the learnings system |
-| first-run-welcome | Adaptive onboarding for new users based on available data |
-| guardrails | Pairs every success metric with a guardrail metric; checks positive findings for trade-offs |
-| knowledge-bootstrap | Loads active dataset context, schema, quirks, and user profile at session start |
-| metric-spec | Standardized template for defining metrics with no ambiguity |
-| question-framing | Structures vague business questions using the Question Ladder framework |
-| question-router | Classifies questions L1-L5 and routes to the right response path |
-| semantic-validation | 4-layer validation stack plus confidence scoring |
-| stakeholder-communication | Adapts findings to the audience: same insight, different framing |
-| tracking-gaps | Identifies when required data doesn't exist and produces instrumentation requests |
-| triangulation | Cross-references findings against multiple sources before presenting |
-| visualization-patterns | Ensures every chart follows SWD design standards |
-| archaeology | Retrieves proven SQL patterns from query archaeology before writing new queries |
+| `data-exploration` | Profile datasets, assess data quality, compare across sources |
+| `question-framing` | Structure questions using the Question Ladder, create analysis design specs |
+| `metric-definition` | Define metrics with standardized templates, pair with guardrail metrics |
+| `triangulation` | Cross-reference findings, detect analytical errors, 4-layer validation with confidence scoring |
+| `visualization` | SWD chart methodology, declutter checklist, theme specs, presentation standards |
+| `stakeholder-comms` | Adapt findings to audience |
+| `forecasting` | Time-series forecasts with naive baselines and exponential smoothing |
+| `sql-patterns` | Retrieve proven SQL patterns from query archaeology |
 
-### On-Demand (Slash Commands)
-
-These activate when you use a command:
-
-| Skill | Command | What It Does |
-|-------|---------|-------------|
-| run-pipeline | `/run-pipeline` | End-to-end analysis with DAG execution, checkpoints, and export |
-| resume-pipeline | `/resume-pipeline` | Resume interrupted work from last completed agent |
-| explore | `/explore` | Quick interactive data exploration |
-| export | `/export` | Export as slides, email, Slack message, or data |
-| connect-data | `/connect-data` | Guided wizard to add a new dataset |
-| switch-dataset | `/switch-dataset` | Change the active dataset |
-| datasets | `/datasets` | List all connected datasets with status |
-| data-inspect | `/data` | Show active schema, optionally drill into a table |
-| metrics | `/metrics` | Browse and manage metric dictionary entries |
-| history | `/history` | View past analyses from the archive |
-| patterns | `/patterns` | View recurring patterns across analyses |
-| forecast | `/forecast` | Generate time-series forecasts |
-| compare-datasets | `/compare-datasets` | Compare metrics across two datasets |
-| setup | `/setup` | Interactive onboarding interview for profile, data, and business context |
-| setup-dev-context | `/setup-dev-context` | Add codebase context for dev teams |
-| runs | `/runs` | List, inspect, compare, and clean up pipeline runs |
-| business | `/business` | Browse organization knowledge (glossary, metrics, products, teams) |
-| log-correction | `/log-correction` | Deliberate correction logging for methodology fixes |
-| architect | `/architect` | Multi-persona planning methodology for new projects |
-| notion-ingest | `/notion-ingest` | Crawl Notion workspace to extract business context |
-
-### Presentation & Knowledge
-
-| Skill | What It Does |
-|-------|-------------|
-| presentation-themes | Theme standards for slide decks: layouts, typography, color palettes |
-| archive-analysis | Saves completed analyses to the knowledge system for future recall |
+Additional internal skills (not Cowork-visible) are in `references/internal-skills/`.
 
 </details>
 
@@ -548,8 +474,7 @@ Python modules in `helpers/` that agents call during execution:
 ## Requirements
 
 - **Python 3.10+**
-- **Node.js 18+** (for Claude Code)
-- **Claude Code** with a [Claude Pro subscription](https://claude.ai/pro) ($20/month)
+- **Cowork** with a [Claude Pro, Max, Team, or Enterprise plan](https://claude.ai/pro)
 - **Internet connection** (for Claude API and optional MotherDuck)
 
 ---

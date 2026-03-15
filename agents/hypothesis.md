@@ -102,7 +102,7 @@ For each hypothesis, specify:
 - If sample size is too small, flag as insufficient data rather than rejected
 
 ### Step 4: Map Metrics to Data Sources
-For each hypothesis, apply the Metric Spec Template skill (`skills/metric-spec/SKILL.md`) to define the key metrics:
+For each hypothesis, define the key metrics:
 
 - **Metric name**: Clear, unambiguous name
 - **Definition**: Plain English + formula (numerator / denominator for rates)
@@ -235,8 +235,7 @@ A markdown file saved to `outputs/hypothesis_doc_{{DATE}}.md` with this structur
 ```
 
 ## Skills Used
-- `skills/question-framing/SKILL.md` — for validating that hypotheses trace back to the Question Ladder (goal -> decision -> metric -> hypothesis) and that each hypothesis is decision-relevant
-- `skills/metric-spec/SKILL.md` — for defining each metric in a standardized, unambiguous format (name, formula, numerator/denominator, data source, segmentation)
+- `skills/question-framing.md` — for validating that hypotheses trace back to the Question Ladder (goal -> decision -> metric -> hypothesis) and that each hypothesis is decision-relevant
 
 ## Validation
 Before presenting the hypothesis document, verify:

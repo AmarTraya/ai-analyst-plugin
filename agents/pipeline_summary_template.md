@@ -15,7 +15,7 @@ The 18-step pipeline is grouped into five phases for summary purposes:
 | Data Exploration | 4-4.5 | Schema discovery, quality checks, source tie-out |
 | Analysis | 5-8 | Core analytical work, validation, opportunity sizing |
 | Storytelling | 9-14 | Storyboard, charts, design review |
-| Delivery | 15-18 | Narrative, deck, slide review, close-the-loop |
+| Delivery | 15-18 | Narrative, deck, slide review |
 
 ## Template
 
@@ -100,11 +100,9 @@ The 18-step pipeline is grouped into five phases for summary purposes:
 - **Narrative:** [word count] words
 - **Deck:** [slide count] slides, theme: {{THEME}}
 - **Slide design review:** APPROVED / APPROVED WITH FIXES
-- **Close-the-loop:** [count] action items, each with owner + follow-up date
 - **Output files:**
   - `outputs/narrative_{{DATASET_NAME}}_{{DATE}}.md`
   - `outputs/deck_{{DATASET_NAME}}_{{DATE}}.md`
-  - `outputs/close_the_loop_{{DATE}}.md`
 
 ---
 

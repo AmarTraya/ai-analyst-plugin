@@ -1,25 +1,11 @@
 ---
 name: question-framing
-description: Structure analytical questions using the Question Ladder framework so every analysis starts with a clear decision context, measurable success criteria, and testable hypotheses.
+description: Structure analytical questions using the Question Ladder framework and create analysis design specs. Use when starting any analysis, when questions are vague, or when analysis lacks decision context.
 ---
-# Skill: Question Framing
 
-## Purpose
-Structure analytical questions using the Question Ladder framework so every analysis starts with a clear decision context, measurable success criteria, and testable hypotheses.
+# Question Framing & Analysis Design
 
-## When to Use
-Apply this skill when starting any new analysis, when a user asks a vague question ("How are we doing?"), or when an analysis request lacks decision context. Always frame before analyzing.
-
-## Instructions
-
-### Pre-flight: Load Learnings
-Before executing, check `.knowledge/learnings/index.md` for relevant entries:
-- Read the file. If it doesn't exist or is empty, skip silently.
-- Scan for entries under **"Question Framing"** and **"General"** headings (or related categories like "Business Context", "Methodology Notes").
-- If entries exist, incorporate them as constraints or context for this execution.
-- Never block execution if learnings are unavailable.
-
-### The Question Ladder
+## The Question Ladder
 
 Every analytical question climbs four rungs:
 
@@ -30,147 +16,79 @@ METRIC      → What will we measure to inform that decision?
 HYPOTHESIS  → What do we expect to find, and why?
 ```
 
-**The rule:** Never start analyzing data until you can state all four rungs. If the requester only gives you a goal ("improve retention"), your first job is to climb the ladder before touching data.
+**Rule:** Never start analyzing data until you can state all four rungs.
 
-### Framing Process
+## Framing Process
 
-**Step 1: Extract the decision**
-Ask: "What will you DO differently based on the answer?"
-- If the answer is "nothing" or "I'm just curious" → this is reporting, not analysis. Redirect to a dashboard or quick stat.
-- If the answer is a specific action → you have a decision. Proceed.
+1. **Extract the decision** — "What will you DO differently based on the answer?" If "nothing" → redirect to reporting.
+2. **Define success criteria** — Specific conditions, not vague understanding goals.
+3. **Form testable hypotheses** — "I think X happened because Y" not "I think things are bad."
+4. **Identify data requirements** — Map each hypothesis to metrics, segments, time ranges. Flag gaps early.
 
-**Step 2: Define success criteria**
-Ask: "How will you know the analysis answered your question?"
-- The answer should be specific: "If conversion rate dropped >10% in segment X, we'll prioritize a fix"
-- Not vague: "We'll understand our users better"
+## Good vs. Bad Questions
 
-**Step 3: Form testable hypotheses**
-Ask: "What do you think is happening, and why?"
-- Good: "I think mobile conversion dropped because the checkout redesign broke on small screens"
-- Bad: "I think things are bad"
+| Bad | Problem | Good |
+|-----|---------|------|
+| "How are our users doing?" | No decision context | "Did the onboarding redesign improve Day-7 retention?" |
+| "Analyze our funnel" | No hypothesis or scope | "Where in signup-to-purchase are we losing users, by channel?" |
+| "What's our conversion rate?" | Reporting, not analysis | "Why did conversion drop 15% in March, across segments?" |
 
-**Step 4: Identify data requirements**
-Ask: "What data do we need, and do we have it?"
-- Map each hypothesis to specific metrics, segments, and time ranges
-- Flag gaps early (see Tracking Gap Identification skill)
+## Impact × Feasibility
 
-### Good vs. Bad Questions
+When multiple questions emerge, prioritize by:
+- **High impact:** Revenue >$100K, affects >10% users, informs this-quarter decision
+- **High feasibility:** Data exists and clean, answerable in <4 hours
+- **Do first:** High impact + high feasibility. **Skip:** Low impact + low feasibility.
 
-| Bad Question | Problem | Good Question |
-|---|---|---|
-| "How are our users doing?" | No decision context, unmeasurable | "Did the onboarding redesign improve Day-7 retention for new users?" |
-| "Analyze our funnel" | No hypothesis, no scope | "Where in the signup-to-purchase funnel are we losing the most users, and does it differ by acquisition channel?" |
-| "What's our conversion rate?" | Reporting, not analysis | "Why did conversion rate drop 15% in March, and is it affecting all segments equally?" |
-| "Tell me about churn" | Too broad, no decision | "Which user segments have the highest 90-day churn rate, and what behaviors predict churn in the first 30 days?" |
-| "Is our product doing well?" | Unmeasurable, no comparison | "How does our monthly active user growth compare to Q3, and which features are driving engagement?" |
+## Analysis Design Spec
 
-### Impact × Feasibility Prioritization
+Before touching data, fill in all 7 fields:
 
-When multiple questions emerge, prioritize:
-
-```
-                    HIGH IMPACT
-                        │
-          ┌─────────────┼─────────────┐
-          │   DO FIRST   │   PLAN FOR  │
-          │  (Quick win)  │  (Strategic) │
-HIGH      │               │              │
-FEASIBILITY ──────────────┼──────────────── LOW
-          │               │              │ FEASIBILITY
-          │   DO IF TIME  │    SKIP     │
-          │  (Nice to have)│  (Not worth) │
-          └─────────────┼─────────────┘
-                        │
-                    LOW IMPACT
+```markdown
+## Analysis Design Spec
+### 1. Question — [Specific, testable]
+### 2. Decision — [Concrete action informed by this]
+### 3. Data Needed — [Table with: Data | Source | Available? | Notes]
+### 4. Dimensions — [2-4 segmentation dimensions with justification]
+### 5. Time Range & Granularity — [Period, granularity, comparison]
+### 6. Output Format — [Quick answer | Analysis report | Deck | Data table]
+### 7. Success Criteria — [Falsifiable conditions]
 ```
 
-**Impact criteria:**
-- Revenue/cost implication >$100K → High
-- Affects >10% of users → High
-- Informs a decision being made this quarter → High
-- Curiosity-driven, no pending decision → Low
+### Scope Calibration
 
-**Feasibility criteria:**
-- Data exists and is clean → High
-- Can be answered in <4 hours → High
-- Requires new instrumentation → Low
-- Requires data from another team → Low
+| Request Type | Depth | Typical Agents | Time |
+|-------------|-------|----------------|------|
+| Number pull | Single stat | Data Explorer only | Minutes |
+| Monitoring | Trend check | Overtime/Trend | 15-30 min |
+| Exploration | Open investigation | Descriptive Analytics | 30-60 min |
+| Deep dive | Root cause | Full pipeline | 1-2 hours |
 
-### Output Format: Question Brief
+## Question Brief Output
 
 ```markdown
 # Question Brief: [Title]
 ## Date: [YYYY-MM-DD]
 
 ### Business Context
-[2-3 sentences: what's happening, why this matters now]
+[2-3 sentences]
 
 ### The Question Ladder
 | Rung | Statement |
-|------|-----------|
-| **Goal** | [Business outcome] |
-| **Decision** | [Specific action this informs] |
-| **Metric** | [What we'll measure] |
-| **Hypothesis** | [What we expect to find and why] |
+| Goal | ... |
+| Decision | ... |
+| Metric | ... |
+| Hypothesis | ... |
 
 ### Success Criteria
-[How we'll know the analysis answered the question — specific thresholds or conditions]
+[Specific thresholds or conditions]
 
 ### Data Requirements
-| Data Needed | Source | Available? | Notes |
-|-------------|--------|-----------|-------|
-| [metric/field] | [table/system] | Yes/No/Partial | [gaps, caveats] |
+[Table: Data | Source | Available? | Notes]
 
 ### Scope
-- **Time range:** [specific dates]
-- **Segments:** [which user groups, geographies, platforms]
-- **Exclusions:** [what we're intentionally leaving out and why]
+- Time range, Segments, Exclusions
 
 ### Priority
-- **Impact:** [High/Medium/Low — with justification]
-- **Feasibility:** [High/Medium/Low — with justification]
-- **Recommendation:** [Do First / Plan For / Do If Time / Skip]
+- Impact, Feasibility, Recommendation
 ```
-
-## Examples
-
-### Example 1: Vague → Well-framed
-**Incoming request:** "Can you look at our signup numbers?"
-
-**Reframed:**
-| Rung | Statement |
-|------|-----------|
-| **Goal** | Increase new user signups by 20% in Q1 |
-| **Decision** | Should we invest in fixing the mobile signup flow or increasing top-of-funnel traffic? |
-| **Metric** | Signup completion rate by device type + traffic source conversion rate |
-| **Hypothesis** | Mobile signup completion rate is <50% of desktop because the form doesn't render properly on small screens. Fixing mobile is higher ROI than more traffic. |
-
-### Example 2: Curiosity → Decision-driven
-**Incoming request:** "I'm curious about our power users"
-
-**Reframed:**
-| Rung | Statement |
-|------|-----------|
-| **Goal** | Increase the percentage of users who become power users (>10 sessions/month) |
-| **Decision** | Which onboarding interventions should we prioritize to convert casual → power users? |
-| **Metric** | Behaviors in first 7 days that predict power user status at Day 30 |
-| **Hypothesis** | Users who complete the tutorial AND create a project in their first session are 3x more likely to become power users. The tutorial completion rate is only 23%. |
-
-### Example 3: Broad → Scoped
-**Incoming request:** "Analyze our churn"
-
-**Reframed:**
-| Rung | Statement |
-|------|-----------|
-| **Goal** | Reduce 90-day churn from 35% to 25% |
-| **Decision** | Which segment's churn should we tackle first — low-engagement users or users who hit a specific friction point? |
-| **Metric** | 90-day churn rate by: (a) engagement tier in first 30 days, (b) last feature used before churning |
-| **Hypothesis** | Users who never use Feature X churn at 2x the rate of users who do. Feature X has a discoverability problem, not a value problem. |
-
-## Anti-Patterns
-
-1. **Never start analyzing before framing** — "just pulling some numbers" without a question leads to interesting-but-useless findings
-2. **Never accept "just curious" as the decision** — push for "what would you do differently?" If the answer is truly nothing, redirect to a dashboard
-3. **Never frame questions with implied answers** — "Can you prove that Feature X works?" is not a question, it's confirmation bias. Reframe as "What is the impact of Feature X on [metric]?"
-4. **Never frame questions too broadly** — "How are we doing?" needs scoping. What metric? What time range? Compared to what?
-5. **Never skip the hypothesis** — hypotheses prevent fishing expeditions and give you something specific to test

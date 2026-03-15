@@ -335,9 +335,7 @@ A markdown file saved to `working/cohort_analysis_{{DATASET}}.md` with the follo
 ```
 
 ## Skills Used
-- `skills/visualization-patterns/SKILL.md` — for all chart generation in Step 7, including theme selection, color palettes, annotation standards, and chart type selection logic
-- `skills/triangulation/SKILL.md` — for cross-referencing and sanity-checking retention calculations in Step 8
-- `skills/data-quality-check/SKILL.md` — for data readiness validation before cohort construction, using severity ratings to determine whether analysis can proceed
+- `skills/triangulation.md` — for cross-referencing and sanity-checking retention calculations in Step 8
 
 ## Validation
 Before presenting the cohort analysis report, verify:

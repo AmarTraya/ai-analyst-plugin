@@ -3,7 +3,7 @@
 ## Purpose
 Track pipeline execution state for resume capability and progress reporting.
 Written to `working/pipeline_state.json` during `/run-pipeline` execution.
-Read by `/resume-pipeline` to determine restart point.
+Read by `/run-pipeline` auto-resume to determine restart point.
 
 ## Schema (V2 — agent-keyed)
 
@@ -121,14 +121,14 @@ Pipeline-level:
 running → completed   (all agents complete, degraded, or skipped)
 running → failed      (any critical agent failed and pipeline halted)
 running → paused      (user paused or context limit reached)
-paused  → running     (resumed via /resume-pipeline)
+paused  → running     (resumed via /run-pipeline auto-resume)
 ```
 
 ## Lifecycle
 
 1. **Created** at pipeline start (source resolution). All agents initialized to `pending`.
 2. **Updated** after each agent completes, degrades, or fails. `updated_at` advances.
-3. **Read** by `/resume-pipeline` to find agents with `in_progress` or `pending` status and restart from the next runnable agent.
+3. **Read** by `/run-pipeline` auto-resume to find agents with `in_progress` or `pending` status and restart from the next runnable agent.
 4. **Archived** to `.knowledge/analyses/` on successful completion alongside the final outputs.
 
 ## Rules

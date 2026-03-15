@@ -1,8 +1,9 @@
 ---
-description: Browse, search, and display metric definitions from the active dataset
-argument-hint: "[metric-id]"
+description: Browse and search metric definitions from the active dataset's dictionary
+argument-hint: "[metric_id] [category=<cat>] [search=<term>]"
 ---
-# Skill: Metrics
+
+# /metrics
 
 ## Purpose
 Browse, search, and display metric definitions from the active dataset's
@@ -25,7 +26,7 @@ and validated.
 ### Step 1: Load Metric Dictionary
 1. Read `.knowledge/active.yaml` to identify the active dataset.
 2. Read `.knowledge/datasets/{active}/metrics/index.yaml` for the metric list.
-3. If no metrics directory exists: "No metric dictionary for this dataset. Use the metric-spec skill to define metrics."
+3. If no metrics directory exists: "No metric dictionary for this dataset. Use the metric-definition skill to define metrics."
 
 ### Step 2: Execute Command
 
@@ -50,11 +51,11 @@ and validated.
 ### Step 3: Contextual Suggestions
 After displaying metrics, suggest relevant actions:
 - "Want to validate {metric} against the current data? Use the data-profiling skill."
-- "Need to define a new metric? Use the metric-spec skill."
+- "Need to define a new metric? Use the metric-definition skill."
 - "Want to see how {metric} trends over time? Ask me to analyze it."
 
 ## Edge Cases
 - **No active dataset:** Prompt to connect one
-- **Empty metric dictionary:** Suggest using metric-spec skill
+- **Empty metric dictionary:** Suggest using metric-definition skill
 - **Metric referenced but not in dictionary:** Offer to create it
 - **Stale validation:** Flag metrics where last_validated is >30 days ago

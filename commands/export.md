@@ -1,8 +1,9 @@
 ---
-description: Export analysis results in different formats (slides, email, Slack) for different audiences
-argument-hint: "<format>"
+description: Export analysis results as slides, email, Slack message, brief, or data
+argument-hint: "<slides|email|slack|brief|data|all>"
 ---
-# Skill: Export
+
+# /export
 
 ## Purpose
 Export analysis results in different formats for different audiences. Converts
