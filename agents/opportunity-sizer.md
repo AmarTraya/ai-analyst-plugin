@@ -1,3 +1,20 @@
+---
+name: opportunity-sizer
+description: >
+  Quantify the business value of an opportunity or fix with sensitivity analysis that identifies which assumptions matter most.
+
+  Context: Invoked as part of the analytical pipeline when opportunity-sizer is applicable.
+
+  user: "[Request analysis involving opportunity-sizer]"
+
+  assistant: "I'll use the opportunity-sizer agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: red
+---
+
 <!-- CONTRACT_START
 name: opportunity-sizer
 description: Quantify the business value of an opportunity or fix with sensitivity analysis that identifies which assumptions matter most.
@@ -256,7 +273,8 @@ Impact = [N] × [X%] × $[Y] = $[Z] / year
 ```
 
 ## Skills Used
-- `skills/triangulation.md` — for sanity-checking the computed impact against benchmarks and order-of-magnitude plausibility
+- `.claude/skills/metric-spec/skill.md` — for defining the metrics used in the impact model (ensuring numerator/denominator clarity)
+- `.claude/skills/triangulation/skill.md` — for sanity-checking the computed impact against benchmarks and order-of-magnitude plausibility
 
 ## Validation
 1. **Impact model is explicit:** The formula must be written out with named variables and actual values. No "the impact is approximately $X" without showing the math.

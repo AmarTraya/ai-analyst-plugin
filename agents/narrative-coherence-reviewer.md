@@ -1,3 +1,20 @@
+---
+name: narrative-coherence-reviewer
+description: >
+  Review the storyboard as a narrative sequence before charting, ensuring coherent story flow, progressive depth, and no story gaps.
+
+  Context: Invoked as part of the analytical pipeline when narrative-coherence-reviewer is applicable.
+
+  user: "[Request analysis involving narrative-coherence-reviewer]"
+
+  assistant: "I'll use the narrative-coherence-reviewer agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: yellow
+---
+
 <!-- CONTRACT_START
 name: narrative-coherence-reviewer
 description: Review the storyboard as a narrative sequence before charting, ensuring coherent story flow, progressive depth, and no story gaps.
@@ -248,7 +265,8 @@ Criteria for NEEDS RESEQUENCING (all must be true):
 ```
 
 ## Skills Used
-- `skills/question-framing.md` — to verify the storyboard answers the original business question
+- `.claude/skills/visualization-patterns/skill.md` — for Context-Tension-Resolution sequencing principles
+- `.claude/skills/question-framing/skill.md` — to verify the storyboard answers the original business question
 
 ## Validation
 1. **All beats reviewed**: Every beat in {{STORYBOARD}} must appear in the phase structure table and progressive focus assessment. No beats skipped.

@@ -1,3 +1,20 @@
+---
+name: validation
+description: >
+  Independently verify analytical findings by re-deriving key numbers, checking arithmetic, cross-referencing data sources, and flagging common statistical errors.
+
+  Context: Invoked as part of the analytical pipeline when validation is applicable.
+
+  user: "[Request analysis involving validation]"
+
+  assistant: "I'll use the validation agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: yellow
+---
+
 <!-- CONTRACT_START
 name: validation
 description: Independently verify analytical findings by re-deriving key numbers, checking arithmetic, cross-referencing data sources, and flagging common statistical errors.
@@ -78,7 +95,7 @@ Scan all numbers in the report for internal arithmetic consistency:
 5. **Ranking consistency**: If findings are ranked (e.g., "top 3 drivers"), verify the ranking matches the data. The #1 driver should have the largest effect size.
 
 ### Step 4: Apply Triangulation skill
-Read `skills/triangulation.md`. For each major finding (not every claim — focus on the top-level conclusions), apply:
+Read `.claude/skills/triangulation/skill.md`. For each major finding (not every claim — focus on the top-level conclusions), apply:
 
 1. **Order-of-magnitude check**: Does the number pass a basic reasonableness test? If the report claims 500% month-over-month growth, is that plausible for this business? If it claims 0.01% conversion rate, is that realistic?
 2. **Cross-source verification**: Can the finding be corroborated from a different data source or a different analytical approach? For example:
@@ -203,8 +220,8 @@ Add a row to the Error Checks table:
 
 **Interpretation note:** Benjamini-Hochberg controls the *false discovery rate* (FDR) — the expected proportion of false positives among all rejected hypotheses. It is less conservative than Bonferroni (which controls family-wise error rate) and is appropriate for exploratory product analytics where missing a real finding is as costly as reporting a false one. If the analysis context demands stricter control (e.g., regulatory or medical), use `method="bonferroni"` instead.
 
-### Step 6: Apply data quality checks
-Verify:
+### Step 6: Apply Data Quality Check skill
+Read `.claude/skills/data-quality-check/skill.md`. Verify:
 
 1. **Null rates**: Are there columns with high null rates that could affect the analysis? If the analysis computes an average from a column that is 30% null, the result may be biased.
 2. **Date range completeness**: Does the data cover the full period the analysis claims to cover? Check for gaps — missing days, incomplete months, or late-arriving data.
@@ -311,7 +328,8 @@ Where `{{DATASET_NAME}}` is derived from the analysis report and `{{DATE}}` is t
 ```
 
 ## Skills Used
-- `skills/triangulation.md` — for cross-referencing findings against alternative data sources, order-of-magnitude checks, and directional consistency verification
+- `.claude/skills/triangulation/skill.md` — for cross-referencing findings against alternative data sources, order-of-magnitude checks, and directional consistency verification
+- `.claude/skills/data-quality-check/skill.md` — for verifying data completeness, null rates, duplicates, and referential integrity that could affect the analysis
 
 ## Validation
 1. **Completeness**: Verify that every quantitative claim in {{ANALYSIS_RESULTS}} has a corresponding row in the Claim-by-Claim table. Count the claims in the report and count the rows in the table — they must match.

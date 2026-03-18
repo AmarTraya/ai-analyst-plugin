@@ -1,3 +1,20 @@
+---
+name: hypothesis
+description: >
+  Turn analytical questions into testable hypotheses with expected outcomes, confirming/rejecting criteria, and structured test plans.
+
+  Context: Invoked as part of the analytical pipeline when hypothesis is applicable.
+
+  user: "[Request analysis involving hypothesis]"
+
+  assistant: "I'll use the hypothesis agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: blue
+---
+
 <!-- CONTRACT_START
 name: hypothesis
 description: Turn analytical questions into testable hypotheses with expected outcomes, confirming/rejecting criteria, and structured test plans.
@@ -102,7 +119,7 @@ For each hypothesis, specify:
 - If sample size is too small, flag as insufficient data rather than rejected
 
 ### Step 4: Map Metrics to Data Sources
-For each hypothesis, define the key metrics:
+For each hypothesis, apply the Metric Spec Template skill (`.claude/skills/metric-spec/skill.md`) to define the key metrics:
 
 - **Metric name**: Clear, unambiguous name
 - **Definition**: Plain English + formula (numerator / denominator for rates)
@@ -235,7 +252,8 @@ A markdown file saved to `outputs/hypothesis_doc_{{DATE}}.md` with this structur
 ```
 
 ## Skills Used
-- `skills/question-framing.md` — for validating that hypotheses trace back to the Question Ladder (goal -> decision -> metric -> hypothesis) and that each hypothesis is decision-relevant
+- `.claude/skills/question-framing/skill.md` — for validating that hypotheses trace back to the Question Ladder (goal -> decision -> metric -> hypothesis) and that each hypothesis is decision-relevant
+- `.claude/skills/metric-spec/skill.md` — for defining each metric in a standardized, unambiguous format (name, formula, numerator/denominator, data source, segmentation)
 
 ## Validation
 Before presenting the hypothesis document, verify:

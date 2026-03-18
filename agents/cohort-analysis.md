@@ -1,3 +1,20 @@
+---
+name: cohort-analysis
+description: >
+  Perform cohort analysis -- retention curves, cohort comparison, vintage analysis, and cohort LTV -- to reveal how user behavior evolves over time.
+
+  Context: Invoked as part of the analytical pipeline when cohort-analysis is applicable.
+
+  user: "[Request analysis involving cohort-analysis]"
+
+  assistant: "I'll use the cohort-analysis agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: green
+---
+
 <!-- CONTRACT_START
 name: cohort-analysis
 description: Perform cohort analysis -- retention curves, cohort comparison, vintage analysis, and cohort LTV -- to reveal how user behavior evolves over time.
@@ -335,7 +352,9 @@ A markdown file saved to `working/cohort_analysis_{{DATASET}}.md` with the follo
 ```
 
 ## Skills Used
-- `skills/triangulation.md` — for cross-referencing and sanity-checking retention calculations in Step 8
+- `.claude/skills/visualization-patterns/skill.md` — for all chart generation in Step 7, including theme selection, color palettes, annotation standards, and chart type selection logic
+- `.claude/skills/triangulation/skill.md` — for cross-referencing and sanity-checking retention calculations in Step 8
+- `.claude/skills/data-quality-check/skill.md` — for data readiness validation before cohort construction, using severity ratings to determine whether analysis can proceed
 
 ## Validation
 Before presenting the cohort analysis report, verify:

@@ -1,3 +1,20 @@
+---
+name: deck-creator
+description: >
+  Create a complete slide deck from analysis outputs by combining a storytelling narrative with charts, applying a presentation theme, and generating speaker notes.
+
+  Context: Invoked as part of the analytical pipeline when deck-creator is applicable.
+
+  user: "[Request analysis involving deck-creator]"
+
+  assistant: "I'll use the deck-creator agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: magenta
+---
+
 <!-- CONTRACT_START
 name: deck-creator
 description: Create a complete slide deck from analysis outputs by combining a storytelling narrative with charts, applying a presentation theme, and generating speaker notes.
@@ -229,8 +246,8 @@ Inventory the chart files in {{CHARTS}}:
 - Charts should render on white backgrounds (they're embedded as `<img>` on dark slides)
 - Use the QR code white-container pattern from the Presentation Themes skill when embedding QR codes
 
-### Step 2: Apply theme settings
-Load the theme specified by {{THEME}}. Extract:
+### Step 2: Apply the Presentation Themes skill
+Read `.claude/skills/presentation-themes/skill.md`. Load the theme specified by {{THEME}}. Extract:
 - Color palette (primary, secondary, accent, background, text)
 - Font specifications (headline font, body font, sizes)
 - Slide layout rules (margins, chart placement, text density limits)
@@ -504,8 +521,8 @@ Apply the theme's formatting directives:
 - Apply the theme's emphasis patterns (bold for key numbers, etc.)
 - Note the theme's color palette in a metadata header (for tools like Gamma that support theme configuration)
 
-### Step 7: Verify chart consistency
-Verify:
+### Step 7: Apply Visualization Patterns skill for chart consistency
+Read `.claude/skills/visualization-patterns/skill.md`. Verify:
 - All charts referenced in the deck follow the visualization standards
 - Chart titles are descriptive (not generic like "Chart 1")
 - Axis labels are present and readable
@@ -610,7 +627,8 @@ Where `{{DATASET_NAME}}` is derived from the narrative and `{{DATE}}` is the cur
 ```
 
 ## Skills Used
-- `helpers/chart_style_guide.md` — for chart quality, consistency, and accessibility standards
+- `.claude/skills/presentation-themes/skill.md` — for theme selection, slide layout rules, color palettes, font specifications, and content density guidelines
+- `.claude/skills/visualization-patterns/skill.md` — for verifying chart quality, consistency, and accessibility within the deck context
 
 ## Validation
 1. **Slide structure completeness**: Verify the deck contains all mandatory slide types: title, executive summary, context, at least one insight slide, synthesis, and recommendations. If any are missing, add them.

@@ -1,3 +1,20 @@
+---
+name: source-tieout
+description: >
+  Verify data loading integrity by comparing pandas direct-read vs DuckDB SQL on foundational metrics. HALT on mismatch.
+
+  Context: Invoked as part of the analytical pipeline when source-tieout is applicable.
+
+  user: "[Request analysis involving source-tieout]"
+
+  assistant: "I'll use the source-tieout agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: cyan
+---
+
 <!-- CONTRACT_START
 name: source-tieout
 description: Verify data loading integrity by comparing pandas direct-read vs DuckDB SQL on foundational metrics. HALT on mismatch.

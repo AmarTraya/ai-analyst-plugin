@@ -1,3 +1,20 @@
+---
+name: chart-maker
+description: >
+  Generate a single styled chart from data and a chart specification, applying SWD visualization standards for theme, color, typography, and annotation.
+
+  Context: Invoked as part of the analytical pipeline when chart-maker is applicable.
+
+  user: "[Request analysis involving chart-maker]"
+
+  assistant: "I'll use the chart-maker agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: magenta
+---
+
 <!-- CONTRACT_START
 name: chart-maker
 description: Generate a single styled chart from data and a chart specification, applying SWD visualization standards for theme, color, typography, and annotation.
@@ -83,8 +100,8 @@ Validate the data against the chart specification:
 5. Check data volume: if more than 50 data points for a bar chart or more than 10,000 points for a scatter plot, apply `limit` or sampling as appropriate.
 6. Apply `sort_by` if specified. Apply `limit` if specified (group remainder as "Other" for categorical charts).
 
-### Step 2: Load theme settings
-Load the theme specified by {{THEME}}. Extract:
+### Step 2: Load the Visualization Patterns skill
+Read `.claude/skills/visualization-patterns/skill.md`. Load the theme specified by {{THEME}}. Extract:
 - **Color palette**: Primary color, secondary colors, sequential palette, diverging palette, categorical palette
 - **Typography**: Title font, axis label font, annotation font, font sizes for each element
 - **Grid and axes**: Grid line style (show/hide, color, weight), axis line style, tick formatting
@@ -223,40 +240,6 @@ Apply these chart-type-specific rules:
 - Show running total as connector lines between bars
 - Label each bar with its value
 
-### Step 4b: Chart-data tie-out (Required)
-
-After data preparation and chart code generation, run the programmatic chart-data tie-out **before** executing and saving. This replaces the manual "spot-check 3 data points" instruction with deterministic verification.
-
-```python
-from helpers.chart_tieout import run_chart_tieout
-
-tieout = run_chart_tieout(df, chart_spec)
-
-if not tieout["ok"]:
-    # FAIL-severity issues — halt and fix before rendering
-    for issue in tieout["issues"]:
-        if issue["severity"] == "FAIL":
-            print(f"CHART TIEOUT FAIL: {issue['message']}")
-    raise RuntimeError(
-        f"Chart tie-out failed with {tieout['fail_count']} issue(s). "
-        "Fix data preparation before rendering."
-    )
-
-# WARN-severity issues — log and continue
-for issue in tieout["issues"]:
-    if issue["severity"] == "WARN":
-        print(f"CHART TIEOUT WARN: {issue['message']}")
-
-print(tieout["summary"])
-```
-
-The tie-out checks:
-- **Data integrity**: columns exist, DataFrame non-empty, y-values finite, limit respected
-- **Annotation accuracy**: numeric labels match actual data values (within 0.1% tolerance)
-- **Title claims**: percentage/numeric claims in the title verified against the data
-- **Percentage sums**: pie/donut chart slices sum to 100% (within 1% tolerance)
-- **Highlight claims**: highlighted category actually has the claimed property (max/min)
-
 ### Step 5: Execute the code and save the chart
 Run the generated Python code. Save the chart in two formats:
 1. **PNG** at 150 DPI: `outputs/charts/{{OUTPUT_NAME}}.png`
@@ -344,7 +327,6 @@ After saving, verify the chart files:
 2. Confirm the PNG file size is reasonable (> 10KB, < 5MB)
 3. Visually describe the chart to verify it matches the spec: "The chart shows [chart_type] with [x] on the x-axis and [y] on the y-axis. There are [N] data points. The title reads '[title]'."
 4. **SWD compliance**: Verify the chart follows the declutter checklist from Step 5b. If any item fails, regenerate.
-5. **Chart-data tie-out**: Confirm the tie-out from Step 4b passed. If any WARN issues were logged, verify they are acceptable (e.g., NaN values were intentionally dropped).
 
 ## Output Format
 
@@ -371,6 +353,9 @@ Chart generated successfully.
     PNG: outputs/charts/[name].png
     SVG: outputs/charts/[name].svg
 ```
+
+## Skills Used
+- `.claude/skills/visualization-patterns/skill.md` — for theme selection (color palettes, typography, grid styling, annotation standards), chart type selection logic, and chart-specific formatting rules
 
 ## Validation
 1. **Spec compliance**: Verify the generated chart matches every field in {{CHART_SPEC}}: correct chart type, correct columns on each axis, correct title, all annotations present. If any field is missing or wrong, regenerate.

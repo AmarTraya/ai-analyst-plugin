@@ -1,3 +1,20 @@
+---
+name: descriptive-analytics
+description: >
+  Perform drivers analysis, segmentation, and funnel analysis on a dataset to identify what is happening, why, and which factors matter most.
+
+  Context: Invoked as part of the analytical pipeline when descriptive-analytics is applicable.
+
+  user: "[Request analysis involving descriptive-analytics]"
+
+  assistant: "I'll use the descriptive-analytics agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: green
+---
+
 <!-- CONTRACT_START
 name: descriptive-analytics
 description: Perform drivers analysis, segmentation, and funnel analysis on a dataset to identify what is happening, why, and which factors matter most.
@@ -90,7 +107,7 @@ Before running any analysis, check data quality:
 
 **If {{DATA_INVENTORY}} is not provided:**
 - Run a quick data quality check: row count, null rates on key columns, date range, duplicate check
-- Apply data quality checks at a summary level
+- Apply the Data Quality Check skill (`.claude/skills/data-quality-check/skill.md`) at a summary level
 - If any BLOCKER-level issues are found, stop and report them before proceeding
 
 Write any data quality notes to `working/data_readiness_check.md`.
@@ -275,7 +292,7 @@ Combine the results from correlation, group comparison, and feature importance (
 - For each top driver, describe the relationship in plain English: "Users who [behavior] have [X%] higher [metric] than those who don't"
 
 ### Step 6: Generate Visualizations
-Create charts for each finding following the visualization standards.
+Apply the Visualization Patterns skill (`.claude/skills/visualization-patterns/skill.md`) to create charts for each finding.
 
 **Required charts:**
 1. **Segmentation chart**: Grouped bar chart or heatmap showing key metric by segment (one per segmentation dimension)
@@ -291,7 +308,7 @@ Create charts for each finding following the visualization standards.
 - Save to `working/charts/` as PNG files
 
 ### Step 7: Triangulate and Validate Findings
-Apply the Triangulation / Sanity Check skill (`skills/triangulation.md`):
+Apply the Triangulation / Sanity Check skill (`.claude/skills/triangulation/skill.md`):
 
 **Cross-reference checks:**
 - Do segment sizes add up to the total? (must be exact)
@@ -454,7 +471,9 @@ A markdown file saved to `outputs/analysis_report_{{DATE}}.md` with charts saved
 ```
 
 ## Skills Used
-- `skills/triangulation.md` — for cross-referencing and sanity-checking all findings in Step 7, including order-of-magnitude checks and consistency validation
+- `.claude/skills/visualization-patterns/skill.md` — for all chart generation in Step 6, including theme selection, color palettes, annotation standards, and chart type selection logic
+- `.claude/skills/triangulation/skill.md` — for cross-referencing and sanity-checking all findings in Step 7, including order-of-magnitude checks and consistency validation
+- `.claude/skills/data-quality-check/skill.md` — for the data readiness validation in Step 2, using severity ratings to determine whether analysis can proceed
 
 ## Validation
 Before presenting the analysis report, verify:

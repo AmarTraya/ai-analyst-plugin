@@ -1,3 +1,20 @@
+---
+name: comms-drafter
+description: >
+  Draft stakeholder communications from completed analysis results, adapting format and tone to user preferences and audience.
+
+  Context: Invoked as part of the analytical pipeline when comms-drafter is applicable.
+
+  user: "[Request analysis involving comms-drafter]"
+
+  assistant: "I'll use the comms-drafter agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: magenta
+---
+
 <!-- CONTRACT_START
 name: comms-drafter
 description: Draft stakeholder communications from completed analysis results, adapting format and tone to user preferences and audience.
@@ -57,7 +74,7 @@ Draft stakeholder communications from completed analysis results. Adapts format 
 Load `.knowledge/user/integrations.yaml`. Extract `preferred_export_format`, `channels`, and `communication.*` toggles. Resolve effective format: {{EXPORT_FORMAT}} if provided, else `preferred_export_format` (treat "slides" as "brief").
 
 ### Step 2: Calibrate tone
-Match {{AUDIENCE}} to the audience matrix:
+Load `.claude/skills/stakeholder-communication/skill.md`. Match {{AUDIENCE}} to the matrix:
 - **Executive** → bottom line + impact. Level 1.
 - **Product** → findings + implications + next steps. Level 2.
 - **Engineering** → root cause + technical detail. Level 3.
@@ -82,6 +99,9 @@ Read {{NARRATIVE}} in full. Extract executive summary, findings, insight, recomm
 
 ### Step 5: Save and report
 Save to `working/comms_draft.md` (or `.yaml` for data format). Report: format used, why (explicit vs. fallback), output path, option to re-run with different {{EXPORT_FORMAT}}.
+
+## Skills Used
+- `.claude/skills/stakeholder-communication/skill.md` — audience matrix for tone calibration
 
 ## Validation
 1. **Format compliance** — draft matches word limits and structure for selected format.

@@ -1,3 +1,20 @@
+---
+name: story-architect
+description: >
+  Design a storyboard before any charting -- story beats following Context-Tension-Resolution arc, then map each beat to a visual format.
+
+  Context: Invoked as part of the analytical pipeline when story-architect is applicable.
+
+  user: "[Request analysis involving story-architect]"
+
+  assistant: "I'll use the story-architect agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: magenta
+---
+
 <!-- CONTRACT_START
 name: story-architect
 description: Design a storyboard before any charting -- story beats following Context-Tension-Resolution arc, then map each beat to a visual format.
@@ -376,7 +393,8 @@ Combine Phase 1 (beats) and Phase 2 (visual mapping) into the final storyboard d
 ```
 
 ## Skills Used
-- `skills/question-framing.md` — to ensure the storyboard answers the original business question
+- `.claude/skills/visualization-patterns/skill.md` — for chart type selection, SWD color principles, and visual technique guidance
+- `.claude/skills/question-framing/skill.md` — to ensure the storyboard answers the original business question
 
 ## Validation
 1. **Completeness**: The storyboard must reach a specific, actionable root cause. If it stops at a surface observation, it is incomplete.

@@ -1,3 +1,20 @@
+---
+name: question-framing
+description: >
+  Generate well-structured, prioritized analytical questions from a business problem description, producing a structured question brief with hypotheses and data requirements for the top candidates.
+
+  Context: Invoked at the start of an analysis pipeline when a business problem has been articulated but analytical direction is unclear.
+
+  user: "We're seeing lower retention in a new user cohort. What should we investigate?"
+
+  assistant: "I'll use the question-framing agent to break down your business problem into structured, prioritized analytical questions and identify which ones your data can support."
+
+  commentary: This agent is appropriate when you have a business challenge but need to narrow the scope and identify the highest-impact questions to investigate. It surfaces data gaps before analysis begins, saving time on impossible questions.
+
+model: inherit
+color: blue
+---
+
 <!-- CONTRACT_START
 name: question-framing
 description: Generate prioritized analytical questions from a business problem, producing a structured question brief with hypotheses and data requirements.
@@ -54,7 +71,7 @@ Read `.knowledge/analyses/index.yaml` to check for related prior work on this da
 - If no prior analyses exist, note: "No prior analysis history for this dataset."
 
 ### Step 2: Generate 5-10 Candidate Analytical Questions
-Apply the Question Framing skill (`skills/question-framing.md`). For each candidate question, use the Question Ladder:
+Apply the Question Framing skill (`.claude/skills/question-framing/skill.md`). For each candidate question, use the Question Ladder:
 
 ```
 Goal → Decision → Metric → Hypothesis
@@ -89,7 +106,7 @@ Score each candidate question on two dimensions:
 Create a prioritization table sorted by Impact x Feasibility score (descending). Select the top 3 questions.
 
 ### Step 4: Apply Tracking Gap Identification to Top 3
-For each of the top 3 questions, identify tracking gaps:
+For each of the top 3 questions, apply the Tracking Gap Identification skill (`.claude/skills/tracking-gaps/skill.md`):
 - List the specific data fields needed to answer the question
 - Check each field against {{AVAILABLE_DATA}}
 - For any gaps: note what's missing, suggest workarounds ("we don't have X, but we can approximate with Y"), and flag if the gap is a blocker vs. a limitation
@@ -166,7 +183,8 @@ A markdown file saved to `outputs/question_brief_{{DATE}}.md` with this structur
 ```
 
 ## Skills Used
-- `skills/question-framing.md` — for the Question Ladder framework, good vs. bad question patterns, and question prioritization criteria
+- `.claude/skills/question-framing/skill.md` — for the Question Ladder framework, good vs. bad question patterns, and question prioritization criteria
+- `.claude/skills/tracking-gaps/skill.md` — for identifying data gaps and suggesting workarounds when needed data doesn't exist
 
 ## Validation
 Before presenting the question brief, verify:

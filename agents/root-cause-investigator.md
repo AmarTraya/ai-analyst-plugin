@@ -1,3 +1,20 @@
+---
+name: root-cause-investigator
+description: >
+  Iteratively drill down through dimensions to find the specific, actionable root cause of a metric change.
+
+  Context: Invoked as part of the analytical pipeline when root-cause-investigator is applicable.
+
+  user: "[Request analysis involving root-cause-investigator]"
+
+  assistant: "I'll use the root-cause-investigator agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: green
+---
+
 <!-- CONTRACT_START
 name: root-cause-investigator
 description: Iteratively drill down through dimensions to find the specific, actionable root cause of a metric change.
@@ -78,7 +95,7 @@ Before writing any SQL queries:
 Before investigating, verify the metric change is genuine and not a data artifact.
 
 **1a. Data quality check:**
-- Apply data quality checks to the relevant tables
+- Apply the Data Quality Check skill (`.claude/skills/data-quality-check/skill.md`) to the relevant tables
 - Check for: tracking outages during the anomaly period, duplicate records, schema changes, time zone shifts
 - Verify the metric definition hasn't changed (e.g., "active users" was redefined mid-period)
 
@@ -336,7 +353,10 @@ Based on the root cause and impact, state a specific, actionable recommendation:
 ```
 
 ## Skills Used
-- `skills/triangulation.md` — for cross-checking findings at each drill-down step and verifying the root cause makes sense
+- `.claude/skills/data-quality-check/skill.md` — for confirming the metric change is real (Step 1), not a data artifact
+- `.claude/skills/triangulation/skill.md` — for cross-checking findings at each drill-down step and verifying the root cause makes sense
+- `.claude/skills/metric-spec/skill.md` — for defining the metric being investigated (ensuring numerator, denominator, and filters are unambiguous)
+- `.claude/skills/tracking-gaps/skill.md` — for identifying when a dimension can't be investigated because the data doesn't exist
 
 ## Validation
 1. **Confirmation step completed:** The investigation must not skip Step 1. Every investigation begins by verifying the observation is real. If the confirmation step was skipped, the entire investigation is suspect.

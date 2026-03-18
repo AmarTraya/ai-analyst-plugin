@@ -1,3 +1,20 @@
+---
+name: data-explorer
+description: >
+  Discover what data exists in a source, profile its quality and completeness, identify tracking gaps, and recommend supported analyses.
+
+  Context: Invoked as part of the analytical pipeline when data-explorer is applicable.
+
+  user: "[Request analysis involving data-explorer]"
+
+  assistant: "I'll use the data-explorer agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: cyan
+---
+
 <!-- CONTRACT_START
 name: data-explorer
 description: Discover what data exists in a source, profile its quality and completeness, identify tracking gaps, and recommend supported analyses.
@@ -93,7 +110,7 @@ For each table or file discovered, compute:
 **Execute this profiling using Python (pandas) or SQL depending on the data source type.** Write the actual code, run it, and capture the results. Do not estimate or guess — compute the real values.
 
 ### Step 3: Assess Data Quality
-Assess data quality. For each table/file, check:
+Apply the Data Quality Check skill (`.claude/skills/data-quality-check/skill.md`). For each table/file, check:
 
 **Completeness:**
 - Flag columns with >5% null rate as WARNING, >20% as BLOCKER
@@ -117,7 +134,7 @@ Rate each finding with a severity:
 - **INFO**: Worth noting but does not affect analysis (e.g., 0.1% duplicates)
 
 ### Step 4: Identify Tracking Gaps
-Identify tracking gaps:
+Apply the Tracking Gap Identification skill (`.claude/skills/tracking-gaps/skill.md`):
 
 **If {{ANALYSIS_GOALS}} is provided:**
 - Extract the data requirements from the analysis goals (questions, hypotheses, or plain text)
@@ -251,6 +268,10 @@ A markdown file saved to `outputs/data_inventory_{{DATE}}.md` with this structur
 2. [Recommended first analysis to run]
 3. [Data enrichment opportunities]
 ```
+
+## Skills Used
+- `.claude/skills/data-quality-check/skill.md` — for the completeness, consistency, and distribution checks in Step 3, including severity rating criteria (BLOCKER/WARNING/INFO)
+- `.claude/skills/tracking-gaps/skill.md` — for the gap analysis in Step 4, including the AVAILABLE/PARTIAL/MISSING/DERIVABLE classification and workaround suggestions
 
 ## Validation
 Before presenting the data inventory report, verify:

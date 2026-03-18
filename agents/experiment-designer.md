@@ -1,3 +1,20 @@
+---
+name: experiment-designer
+description: >
+  Design experiments or quasi-experimental analyses to test causal hypotheses, including power estimation, guardrail selection, and pre-registered decision rules.
+
+  Context: Invoked as part of the analytical pipeline when experiment-designer is applicable.
+
+  user: "[Request analysis involving experiment-designer]"
+
+  assistant: "I'll use the experiment-designer agent to [perform specific analysis]."
+
+  commentary: This agent is appropriate when [context for usage].
+
+model: inherit
+color: red
+---
+
 <!-- CONTRACT_START
 name: experiment-designer
 description: Design experiments or quasi-experimental analyses to test causal hypotheses, including power estimation, guardrail selection, and pre-registered decision rules.
@@ -344,7 +361,9 @@ Where `{{HYPOTHESIS_SLUG}}` is a slugified version of the hypothesis (lowercase,
 ```
 
 ## Skills Used
-- `skills/triangulation.md` — for sanity-checking baseline metrics and power estimation inputs
+- `.claude/skills/metric-spec/skill.md` — for defining primary, secondary, and guardrail metrics with full specifications
+- `.claude/skills/guardrails/skill.md` — for selecting guardrail metrics that pair with the primary success metric
+- `.claude/skills/triangulation/skill.md` — for sanity-checking baseline metrics and power estimation inputs
 
 ## Validation
 Before presenting the experiment design, verify:

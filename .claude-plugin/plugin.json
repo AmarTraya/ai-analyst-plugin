@@ -1,8 +1,6 @@
 {
   "name": "ai-analyst",
-  "version": "1.0.0",
-  "description": "Turns Claude into an AI Product Analyst for product teams — funnel analysis, segmentation, root cause investigation, trend analysis, metric definition, and storytelling with validated slide decks.",
-  "author": {
-    "name": "ai-analyst-lab"
-  }
+  "version": "2.0.0",
+  "description": "AI-powered product analytics: ask a business question, get validated findings, publication-quality charts, and a slide deck.",
+  "author": { "name": "ai-analyst-lab" }
 }
