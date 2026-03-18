@@ -4,7 +4,7 @@ Ask a business question in plain English. Get validated findings, publication-qu
 
 ## Install
 
-1. Open [Claude Cowork](https://claude.ai) and start a Cowork session
+1. Open Claude Cowork and start a Cowork session
 2. Click the **+** button in the chat box
 3. Click **Plugins**
 4. Click **Add Plugin**
