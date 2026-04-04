@@ -11,7 +11,7 @@ Ask a business question in plain English. Get validated findings, publication-qu
 5. Click **Personal**
 6. Click the **+** button
 7. Click **Add marketplace from GitHub**
-8. Paste this URL: `https://github.com/ai-analyst-lab/ai-analyst-plugin`
+8. Paste this URL: `https://github.com/AmarTraya/ai-analyst-plugin`
 9. Click **Sync**
 
 That's it — the AI Analyst plugin is now available in your Cowork sessions.
