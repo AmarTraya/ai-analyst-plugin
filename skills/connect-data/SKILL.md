@@ -29,15 +29,9 @@ profiling the schema, and setting up the knowledge brain.
 ## Instructions
 
 ### Step 1: Choose Connection Type
-Present options:
-1. **CSV files** — "I have CSV files in a local directory"
-2. **DuckDB** — "I have a local DuckDB database file"
-3. **MotherDuck** — "I have a MotherDuck cloud database"
-4. **PostgreSQL** — "I have a PostgreSQL database"
-5. **BigQuery** — "I have a Google BigQuery dataset"
-6. **Snowflake** — "I have a Snowflake warehouse"
-7. **Athena** — "I have an AWS Athena database (Glue catalog)"
-8. **ClickHouse** — "I have a ClickHouse database"
+Ask the user: "What type of data source are you working with? (e.g., CSV, DuckDB, PostgreSQL, BigQuery, Snowflake, Athena, ClickHouse)"
+
+Do NOT use multiple-choice tool. Just ask as a plain text question and match their response to one of: csv, duckdb, motherduck, postgres, bigquery, snowflake, athena, clickhouse.
 
 ### Step 2: Collect Connection Details
 
