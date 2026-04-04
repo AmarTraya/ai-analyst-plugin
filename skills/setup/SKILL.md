@@ -20,19 +20,17 @@ python3 --version  # Need 3.10+
 pip install --break-system-packages pandas numpy matplotlib duckdb scipy seaborn pyyaml pyathena boto3 mcp-clickhouse "mcp[cli]"
 ```
 
-Ask the user: **"What is the path to your repo for the knowledge base?"**
+The workspace has two parts:
 
-Use their answer as the workspace root. If they don't provide one, default to the current working directory.
+1. **Knowledge base (read-only in Cowork)** — lives inside the plugin repo at `.knowledge/`. This is pre-populated with dataset metadata, user profile, and business context. It is read from the plugin root directory (available via `CLAUDE_PLUGIN_ROOT` env var).
 
-**Save the repo path** to `.knowledge/active.yaml` as `repo_path` so every future Cowork session automatically points to it:
-```yaml
-repo_path: /path/to/user/repo
-active_dataset: <dataset-name>
+2. **Working directory (writable in Cowork)** — for outputs, charts, runs, and temporary files. Created in the Cowork sandbox at the current working directory.
+
+**Do NOT ask the user for a repo path.** The knowledge base path is automatically resolved from the plugin root. The working directory is created in the sandbox.
+
+Read the knowledge base from the plugin directory:
 ```
-
-Create workspace structure:
-```
-{repo-path}/
+$CLAUDE_PLUGIN_ROOT/
 ├── .knowledge/
 │   ├── user/
 │   ├── datasets/
@@ -40,6 +38,11 @@ Create workspace structure:
 │   ├── corrections/
 │   ├── setup-state.yaml
 │   └── active.yaml
+```
+
+Create the working directory in the sandbox:
+```
+./ai-analyst-workspace/
 ├── working/runs/
 ├── outputs/
 └── data/
