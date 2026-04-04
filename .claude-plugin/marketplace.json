@@ -1,5 +1,5 @@
 {
-  "name": "ai-analyst",
-  "owner": { "name": "ai-analyst-lab" },
+  "name": "ai-analyst-plugin",
+  "owner": { "name": "AmarTraya" },
   "plugins": [{ "name": "ai-analyst", "source": "./", "description": "AI-powered product analytics: ask a business question, get validated findings, publication-quality charts, and a slide deck.", "version": "2.0.0" }]
 }
