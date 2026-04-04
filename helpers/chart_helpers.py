@@ -15,6 +15,10 @@ Usage:
         check_label_collisions,
         grouped_bar, slope_chart,
         forecast_plot, control_chart_plot,
+        # New chart types
+        cohort_curves, histogram, box_plot, donut_chart,
+        treemap, sankey_flow, geo_bar_chart,
+        diverging_bar, waterfall_chart,
     )
 
     colors = swd_style()
@@ -1546,3 +1550,401 @@ def control_chart_plot(series, center_line, ucl, lcl, violations=None,
     action_title(ax, chart_title)
 
     return fig, ax
+
+
+# ---------------------------------------------------------------------------
+# Cohort Curves — retention/behavior over time per cohort
+# ---------------------------------------------------------------------------
+
+
+def cohort_curves(ax, cohort_data: dict[str, list[float]],
+                  periods: list[str] | list[int] | None = None,
+                  highlight_cohort: str | None = None,
+                  title: str | None = None,
+                  ylabel: str = "Retention %",
+                  xlabel: str = "Period"):
+    """Plot retention/behavior curves for multiple cohorts.
+
+    Args:
+        ax: Matplotlib axes.
+        cohort_data: Dict of {cohort_label: [values per period]}.
+        periods: X-axis labels (e.g., ["M0", "M1", "M2", ...]). Auto-generated if None.
+        highlight_cohort: Cohort to highlight in action color.
+        title: Chart title (takeaway).
+        ylabel: Y-axis label.
+        xlabel: X-axis label.
+    """
+    max_len = max(len(v) for v in cohort_data.values())
+    if periods is None:
+        periods = list(range(max_len))
+    x = list(range(len(periods)))
+
+    for cohort, values in cohort_data.items():
+        is_highlight = (cohort == highlight_cohort)
+        color = COLORS["action"] if is_highlight else COLORS["gray400"]
+        alpha = 1.0 if is_highlight else 0.4
+        lw = 2.5 if is_highlight else 1.2
+        cx = x[:len(values)]
+        ax.plot(cx, values, color=color, alpha=alpha, linewidth=lw)
+        if is_highlight and len(values) > 0:
+            ax.annotate(cohort, xy=(cx[-1], values[-1]),
+                        fontsize=9, fontweight="bold", color=color,
+                        xytext=(5, 0), textcoords="offset points", va="center")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(p) for p in periods], fontsize=9)
+    ax.set_ylabel(ylabel, fontsize=10)
+    ax.set_xlabel(xlabel, fontsize=10)
+    ax.yaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Histogram — distribution of a metric
+# ---------------------------------------------------------------------------
+
+
+def histogram(ax, data, bins: int = 20, highlight_range: tuple | None = None,
+              title: str | None = None, xlabel: str = "", ylabel: str = "Count"):
+    """Plot a histogram with optional range highlighting.
+
+    Args:
+        ax: Matplotlib axes.
+        data: Array-like of values.
+        bins: Number of bins.
+        highlight_range: (min, max) tuple to highlight in action color.
+        title: Chart title.
+        xlabel: X-axis label.
+        ylabel: Y-axis label.
+    """
+    n, bin_edges, patches = ax.hist(data, bins=bins, color=COLORS["gray400"],
+                                     edgecolor=COLORS["white"], linewidth=0.5)
+    if highlight_range:
+        lo, hi = highlight_range
+        for patch, left_edge in zip(patches, bin_edges[:-1]):
+            if left_edge >= lo and left_edge < hi:
+                patch.set_facecolor(COLORS["action"])
+
+    ax.set_xlabel(xlabel, fontsize=10)
+    ax.set_ylabel(ylabel, fontsize=10)
+    ax.yaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Box Plot — compare distributions across categories
+# ---------------------------------------------------------------------------
+
+
+def box_plot(ax, data_dict: dict[str, list], highlight: str | None = None,
+             title: str | None = None, ylabel: str = "", horizontal: bool = True):
+    """Plot box plots for multiple categories.
+
+    Args:
+        ax: Matplotlib axes.
+        data_dict: {category: [values]}.
+        highlight: Category to highlight.
+        title: Chart title.
+        ylabel: Value axis label.
+        horizontal: If True, horizontal boxes (better for long labels).
+    """
+    labels = list(data_dict.keys())
+    data = [data_dict[k] for k in labels]
+    vert = not horizontal
+
+    bp = ax.boxplot(data, vert=vert, patch_artist=True, labels=labels,
+                    widths=0.6, medianprops=dict(color=COLORS["gray900"], linewidth=1.5))
+
+    for i, (box, label) in enumerate(zip(bp["boxes"], labels)):
+        if label == highlight:
+            box.set_facecolor(COLORS["action"])
+            box.set_alpha(0.8)
+        else:
+            box.set_facecolor(COLORS["gray200"])
+            box.set_alpha(0.6)
+
+    if horizontal:
+        ax.set_xlabel(ylabel, fontsize=10)
+    else:
+        ax.set_ylabel(ylabel, fontsize=10)
+
+    ax.yaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Donut Chart — composition/share breakdown
+# ---------------------------------------------------------------------------
+
+
+def donut_chart(ax, labels: list[str], values: list[float],
+                highlight: str | None = None, title: str | None = None,
+                show_pct: bool = True):
+    """Plot a donut chart for composition analysis.
+
+    Args:
+        ax: Matplotlib axes.
+        labels: Category labels.
+        values: Values for each category.
+        highlight: Category to highlight in action color.
+        title: Chart title.
+        show_pct: Show percentage labels.
+    """
+    colors = []
+    for label in labels:
+        if label == highlight:
+            colors.append(COLORS["action"])
+        else:
+            colors.append(COLORS["gray400"])
+
+    explode = [0.03 if label == highlight else 0 for label in labels]
+
+    wedges, texts, autotexts = ax.pie(
+        values, labels=None, autopct="%1.0f%%" if show_pct else "",
+        colors=colors, explode=explode, startangle=90,
+        wedgeprops=dict(width=0.4, edgecolor=COLORS["white"], linewidth=2),
+        pctdistance=0.8,
+    )
+
+    for t in autotexts:
+        t.set_fontsize(9)
+        t.set_color(COLORS["gray900"])
+
+    ax.legend(wedges, labels, loc="center left", bbox_to_anchor=(1, 0.5),
+              fontsize=9, frameon=False)
+    ax.set_aspect("equal")
+    if title:
+        ax.set_title(title, fontsize=13, fontweight="bold", color=COLORS["gray900"],
+                      pad=15, loc="left")
+
+
+# ---------------------------------------------------------------------------
+# Treemap — hierarchical breakdown
+# ---------------------------------------------------------------------------
+
+
+def treemap(ax, labels: list[str], values: list[float],
+            highlight: str | None = None, title: str | None = None):
+    """Plot a treemap for hierarchical size comparison.
+
+    Args:
+        ax: Matplotlib axes.
+        labels: Category labels.
+        values: Size values for each category.
+        highlight: Category to highlight.
+        title: Chart title.
+
+    Requires: squarify (pip install squarify). Falls back to horizontal bar if unavailable.
+    """
+    try:
+        import squarify
+    except ImportError:
+        # Fallback to horizontal bar
+        highlight_bar(ax, labels, values, highlight=highlight,
+                      horizontal=True)
+        if title:
+            action_title(ax, title)
+        return
+
+    colors = [COLORS["action"] if l == highlight else COLORS["gray400"] for l in labels]
+    total = sum(values)
+    pct_labels = [f"{l}\n{v/total*100:.0f}%" for l, v in zip(labels, values)]
+
+    squarify.plot(sizes=values, label=pct_labels, color=colors, alpha=0.85,
+                  ax=ax, text_kwargs={"fontsize": 9, "color": COLORS["gray900"]},
+                  edgecolor=COLORS["white"], linewidth=2)
+    ax.axis("off")
+    if title:
+        ax.set_title(title, fontsize=13, fontweight="bold", color=COLORS["gray900"],
+                      pad=10, loc="left")
+
+
+# ---------------------------------------------------------------------------
+# Sankey Diagram — flow/journey visualization
+# ---------------------------------------------------------------------------
+
+
+def sankey_flow(fig, labels: list[str], sources: list[int], targets: list[int],
+                values: list[float], title: str | None = None,
+                highlight_flow: int | None = None):
+    """Plot a Sankey diagram for user journey / flow analysis.
+
+    Args:
+        fig: Matplotlib figure (used for plotly fallback message).
+        labels: Node labels.
+        sources: Source node indices for each flow.
+        targets: Target node indices for each flow.
+        values: Flow volumes.
+        title: Chart title.
+        highlight_flow: Index of flow to highlight.
+
+    Note: Best rendered with plotly. This creates a text-based representation
+    as matplotlib has limited Sankey support. For rich Sankey, use plotly.
+    """
+    ax = fig.add_subplot(111)
+    ax.axis("off")
+
+    # Build flow summary as text table
+    lines = []
+    if title:
+        lines.append(title)
+        lines.append("=" * len(title))
+    lines.append("")
+
+    for i, (s, t, v) in enumerate(zip(sources, targets, values)):
+        marker = " >>>" if i == highlight_flow else "    "
+        lines.append(f"{marker} {labels[s]:>20s}  →  {labels[t]:<20s}  {v:>10,.0f}")
+
+    text = "\n".join(lines)
+    ax.text(0.05, 0.95, text, transform=ax.transAxes, fontsize=10,
+            fontfamily="monospace", verticalalignment="top",
+            color=COLORS["gray900"])
+
+    return fig, ax
+
+
+# ---------------------------------------------------------------------------
+# India State Heatmap — geographic analysis
+# ---------------------------------------------------------------------------
+
+
+def geo_bar_chart(ax, regions: list[str], values: list[float],
+                  highlight: str | None = None, title: str | None = None,
+                  top_n: int = 15, ylabel: str = ""):
+    """Plot a horizontal bar chart for geographic/regional analysis.
+
+    A practical alternative to map-based viz — works without GIS dependencies.
+    Shows top N regions sorted by value.
+
+    Args:
+        ax: Matplotlib axes.
+        regions: Region/state/city names.
+        values: Metric values per region.
+        highlight: Region to highlight.
+        title: Chart title.
+        top_n: Show top N regions only.
+        ylabel: Value axis label.
+    """
+    # Sort and take top N
+    paired = sorted(zip(values, regions), reverse=True)[:top_n]
+    vals = [p[0] for p in reversed(paired)]
+    regs = [p[1] for p in reversed(paired)]
+
+    colors = [COLORS["action"] if r == highlight else COLORS["gray400"] for r in regs]
+    ax.barh(regs, vals, color=colors, height=0.7, edgecolor="none")
+
+    # Direct labels
+    for i, v in enumerate(vals):
+        ax.text(v + max(vals) * 0.01, i, f"{v:,.0f}", va="center",
+                fontsize=9, color=COLORS["gray600"])
+
+    ax.set_xlabel(ylabel, fontsize=10)
+    ax.xaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Diverging Bar — positive/negative comparison
+# ---------------------------------------------------------------------------
+
+
+def diverging_bar(ax, labels: list[str], values: list[float],
+                  title: str | None = None, positive_label: str = "",
+                  negative_label: str = ""):
+    """Plot a diverging horizontal bar chart (positive vs negative).
+
+    Useful for: change analysis, sentiment, growth vs decline.
+
+    Args:
+        ax: Matplotlib axes.
+        labels: Category labels.
+        values: Values (positive = right, negative = left).
+        title: Chart title.
+        positive_label: Label for positive axis.
+        negative_label: Label for negative axis.
+    """
+    colors = [COLORS["success"] if v >= 0 else COLORS["accent"] for v in values]
+    y = range(len(labels))
+
+    ax.barh(y, values, color=colors, height=0.6, edgecolor="none")
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(labels, fontsize=9)
+    ax.axvline(0, color=COLORS["gray400"], linewidth=0.8)
+
+    # Direct labels
+    for i, v in enumerate(values):
+        ha = "left" if v >= 0 else "right"
+        offset = abs(max(values, key=abs)) * 0.02
+        xpos = v + offset if v >= 0 else v - offset
+        ax.text(xpos, i, f"{v:+,.0f}", va="center", ha=ha,
+                fontsize=9, color=COLORS["gray600"])
+
+    ax.xaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Waterfall Chart — additive decomposition
+# ---------------------------------------------------------------------------
+
+
+def waterfall_chart(ax, labels: list[str], values: list[float],
+                    title: str | None = None, total_label: str = "Total",
+                    show_total: bool = True):
+    """Plot a waterfall chart for metric decomposition.
+
+    Shows how individual components add up to a total.
+
+    Args:
+        ax: Matplotlib axes.
+        labels: Component labels.
+        values: Component values (positive = increase, negative = decrease).
+        title: Chart title.
+        total_label: Label for the total bar.
+        show_total: Whether to add a total bar at the end.
+    """
+    cumulative = np.cumsum(values)
+    starts = np.concatenate(([0], cumulative[:-1]))
+
+    colors = [COLORS["success"] if v >= 0 else COLORS["accent"] for v in values]
+    n = len(labels)
+
+    ax.bar(range(n), values, bottom=starts, color=colors, width=0.6, edgecolor="none")
+
+    # Connector lines
+    for i in range(n - 1):
+        ax.plot([i + 0.3, i + 0.7], [cumulative[i], cumulative[i]],
+                color=COLORS["gray400"], linewidth=0.8, linestyle="--")
+
+    # Total bar
+    if show_total:
+        total = cumulative[-1]
+        ax.bar(n, total, color=COLORS["action"], width=0.6, edgecolor="none")
+        labels = list(labels) + [total_label]
+        ax.text(n, total + abs(total) * 0.02, f"{total:,.0f}",
+                ha="center", va="bottom", fontsize=9, fontweight="bold",
+                color=COLORS["gray900"])
+
+    # Direct labels on components
+    for i, v in enumerate(values):
+        y = starts[i] + v / 2
+        ax.text(i, y, f"{v:+,.0f}", ha="center", va="center",
+                fontsize=8, color=COLORS["white"] if abs(v) > 0 else COLORS["gray600"])
+
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.axhline(0, color=COLORS["gray400"], linewidth=0.8)
+    ax.yaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
