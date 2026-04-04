@@ -41,34 +41,37 @@ def _get_connection():
 
 
 @mcp.tool()
-def query_athena(sql: str, database: str = "") -> str:
-    """Execute a SQL query against AWS Athena and return results as JSON.
+def query_athena(sql: str) -> str:
+    """Execute a SELECT query against AWS Athena and return results as JSON.
 
     Args:
-        sql: The SQL query to execute. Supports cross-database queries
-             (e.g., SELECT * FROM trayaprod.engagements_vw LIMIT 10).
-        database: Optional database override. Defaults to trayaprod.
+        sql: The SQL SELECT query to execute. Use fully qualified table names
+             for cross-database queries (e.g., trayaprod.engagements_vw).
+             Available databases: trayaprod, tatvav2db_public, traya_marts_ez, google_analytics.
+             IMPORTANT: Only SELECT queries are supported. Do not use SHOW, USE, DESCRIBE, or DDL.
+             Always include LIMIT to avoid scanning too much data.
 
     Returns:
         JSON string with columns and rows, or error message.
     """
     try:
         conn = _get_connection()
-        if database:
-            conn.cursor().execute(f"USE {database}")
-
-        import pandas as pd
-        df = pd.read_sql(sql, conn)
+        cur = conn.cursor()
+        cur.execute(sql)
+        columns = [desc[0] for desc in cur.description] if cur.description else []
+        rows = cur.fetchall()
+        cur.close()
         conn.close()
 
+        data = [dict(zip(columns, row)) for row in rows[:500]]
         result = {
-            "columns": list(df.columns),
-            "row_count": len(df),
-            "data": df.head(500).to_dict(orient="records"),
+            "columns": columns,
+            "row_count": len(rows),
+            "data": data,
         }
-        if len(df) > 500:
+        if len(rows) > 500:
             result["truncated"] = True
-            result["total_rows"] = len(df)
+            result["total_rows"] = len(rows)
 
         return json.dumps(result, default=str)
 
