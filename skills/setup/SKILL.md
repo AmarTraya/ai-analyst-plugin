@@ -50,10 +50,65 @@ Write to `.knowledge/user/profile.md`.
 Ask: "What data do you have?"
 - **CSV files** → ask for path, verify, invoke connect-data
 - **DuckDB** → ask for path, verify, invoke connect-data
-- **Cloud warehouse** → explain MCP setup, mark partial
+- **Cloud warehouse (BigQuery, Snowflake)** → invoke connect-data for config setup
+- **Athena or ClickHouse** → guide MCP server setup (see below), then invoke connect-data
 - **Nothing yet** → offer sample datasets or skip
 
 Don't block on this — continue to Phase 3 even if partial.
+
+### MCP Server Setup for Athena / ClickHouse
+
+Cowork runs in a sandbox and cannot access local AWS credentials or database passwords directly. To run live queries, users must set up an MCP server that runs locally on their machine.
+
+**For Athena:**
+
+1. Install dependencies:
+   ```bash
+   pip install pyathena boto3 pandas "mcp[cli]"
+   ```
+
+2. The MCP server is included in this plugin at `helpers/mcp_athena_server.py`.
+
+3. Add to Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on Mac, or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+   ```json
+   {
+     "mcpServers": {
+       "athena-query": {
+         "command": "python3",
+         "args": ["{path-to-plugin}/helpers/mcp_athena_server.py"],
+         "env": {
+           "AWS_PROFILE": "your-aws-profile"
+         }
+       }
+     }
+   }
+   ```
+
+4. Restart Claude Desktop. Three tools become available: `query_athena`, `list_athena_tables`, `describe_athena_table`.
+
+**For ClickHouse:**
+
+Users can use the community `mcp-clickhouse` server:
+```bash
+pip install mcp-clickhouse
+```
+Then add to Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "clickhouse-query": {
+      "command": "python3",
+      "args": ["-m", "mcp_clickhouse"],
+      "env": {
+        "CLICKHOUSE_HOST": "localhost",
+        "CLICKHOUSE_PORT": "8123",
+        "CLICKHOUSE_USER": "default",
+        "CLICKHOUSE_PASSWORD": ""
+      }
+    }
+  }
+}
+```
 
 ## Phase 3: Business Context
 
