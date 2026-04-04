@@ -125,6 +125,61 @@ Then add to Claude Desktop config:
 }
 ```
 
+## Phase 2.5: Knowledge Repository
+
+Ask: "Where is your knowledge base (schema, quirks, metrics)?"
+
+Options:
+1. **GitHub repo** — remote, shared across team
+2. **Local directory** — for testing or single-user setups
+3. **Skip** — use the plugin's built-in `.knowledge/` files
+
+### Option 1: GitHub Repo
+
+  1. Ask for the repo URL: "Paste the GitHub repo URL — SSH (`git@github.com:org/repo.git`) or HTTPS (`https://github.com/org/repo.git`) both work."
+  2. Ask for branch (default: `main`).
+  3. Validate access:
+     ```bash
+     git ls-remote <repo-url> 2>&1 | head -3
+     ```
+     If this fails, troubleshoot: SSH key issues, repo permissions, URL typo.
+  4. Ask which dataset ID to use (list folders in `datasets/` from the repo, or let user type one).
+  5. Write config:
+     ```bash
+     cat > "${CLAUDE_PLUGIN_DATA:-$HOME/.claude/plugin-data/ai-analyst}/knowledge-config.json" <<EOF
+     {
+       "repo_url": "<user-provided-url>",
+       "branch": "<branch>",
+       "datasets": ["<dataset-id>"]
+     }
+     EOF
+     ```
+  6. Confirm: "Knowledge repo configured. The MCP knowledge server will clone it on next startup."
+
+### Option 2: Local Directory
+
+  1. Ask for the absolute path to the knowledge directory: "Paste the full path to your knowledge directory (e.g., `/Users/you/data-knowledge`)."
+  2. Validate structure:
+     ```bash
+     ls <path>/datasets/
+     ```
+     Should contain at least one dataset folder with `schema.md` and `quirks.md`.
+  3. Ask which dataset ID to use (list the folders found).
+  4. Write config:
+     ```bash
+     cat > "${CLAUDE_PLUGIN_DATA:-$HOME/.claude/plugin-data/ai-analyst}/knowledge-config.json" <<EOF
+     {
+       "local_path": "<user-provided-path>",
+       "datasets": ["<dataset-id>"]
+     }
+     EOF
+     ```
+  5. Confirm: "Local knowledge directory configured. The MCP knowledge server will read from it directly."
+
+### Option 3: Skip
+
+  Skip. The plugin will use local `.knowledge/` files. Suggest: "You can set this up later by running `/setup` again."
+
 ## Phase 3: Business Context
 
 Ask:
