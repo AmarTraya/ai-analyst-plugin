@@ -84,6 +84,36 @@ def _redact_pii(columns: list[str], rows: list) -> tuple[list[str], list, list[s
     return clean_columns, clean_rows, redacted_names
 
 
+def _check_pii_in_select(sql: str) -> list[str]:
+    """Check if SQL SELECT clause contains PII columns.
+
+    Only checks the SELECT portion (before FROM). PII in WHERE/JOIN is allowed.
+    Returns list of PII column names found in SELECT, or empty list.
+    """
+    sql_upper = sql.upper().strip()
+    if not sql_upper.startswith("SELECT"):
+        return []
+
+    # Extract the SELECT clause (everything before the first FROM)
+    from_pos = sql_upper.find(" FROM ")
+    if from_pos == -1:
+        return []
+    select_clause = sql.lower()[:from_pos]
+
+    # Check if SELECT * (bare wildcard, not COUNT(*) or similar)
+    import re as _re
+    if _re.search(r'(?<!\w)\*(?!\))', select_clause):
+        return ["SELECT * may expose PII columns"]
+
+    found = []
+    for pii_col in _PII_COLUMNS:
+        # Match whole word only (not substring)
+        import re as _re
+        if _re.search(r'\b' + _re.escape(pii_col) + r'\b', select_clause):
+            found.append(pii_col)
+    return found
+
+
 @mcp.tool()
 def query_athena(sql: str) -> str:
     """Execute a SELECT query against AWS Athena and return results as JSON.
@@ -94,10 +124,20 @@ def query_athena(sql: str) -> str:
              Available databases: trayaprod, tatvav2db_public, traya_marts_ez, google_analytics.
              IMPORTANT: Only SELECT queries are supported. Do not use SHOW, USE, DESCRIBE, or DDL.
              Always include LIMIT to avoid scanning too much data.
+             PII columns (email, phone, name, address) cannot be in SELECT — use case_id/user_id instead.
 
     Returns:
         JSON string with columns and rows, or error message.
     """
+    # Pre-execution: block queries that SELECT PII columns
+    pii_found = _check_pii_in_select(sql)
+    if pii_found:
+        return json.dumps({
+            "error": "Query blocked: cannot SELECT personally identifiable columns.",
+            "blocked_columns": pii_found,
+            "suggestion": "Use case_id or user_id as anonymous identifiers instead."
+        })
+
     try:
         conn = _get_connection()
         cur = conn.cursor()
