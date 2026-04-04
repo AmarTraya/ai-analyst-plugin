@@ -127,12 +127,15 @@ Then add to Claude Desktop config:
 
 ## Phase 2.5: Knowledge Repository
 
-Ask: "Where is your knowledge base (schema, quirks, metrics)?"
+**REQUIRED — always ask this, even if `.knowledge/` already exists.** This configures the MCP knowledge server that agents use for term lookups. Present the three options clearly:
 
-Options:
-1. **GitHub repo** — remote, shared across team
-2. **Local directory** — for testing or single-user setups
-3. **Skip** — use the plugin's built-in `.knowledge/` files
+"Now let's set up your knowledge base — this is where schema docs, metric definitions, and data quirks live. You have three options:
+
+1. **GitHub repo** — shared with your team, version-controlled, team-editable (e.g., a data-knowledge repo in your org)
+2. **Local directory** — just for you, useful for testing or personal use
+3. **Skip** — use the plugin's built-in files (what we're doing now)
+
+Which would you prefer?"
 
 ### Option 1: GitHub Repo
 

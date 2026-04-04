@@ -54,6 +54,36 @@ def _get_connection():
     )
 
 
+# PII columns that must never appear in query results
+_PII_COLUMNS = {
+    "email", "phone_number", "phone", "chat_phone_number",
+    "first_name", "last_name", "name",
+    "customername", "phone_no",
+    "order_meta_shipping_address", "order_meta_billing_address",
+}
+
+
+def _redact_pii(columns: list[str], rows: list) -> tuple[list[str], list, list[str]]:
+    """Redact PII columns from query results.
+
+    Returns (clean_columns, clean_rows, redacted_column_names).
+    """
+    pii_indices = []
+    redacted_names = []
+    for i, col in enumerate(columns):
+        if col.lower() in _PII_COLUMNS:
+            pii_indices.append(i)
+            redacted_names.append(col)
+
+    if not pii_indices:
+        return columns, rows, []
+
+    keep = [i for i in range(len(columns)) if i not in pii_indices]
+    clean_columns = [columns[i] for i in keep]
+    clean_rows = [tuple(row[i] for i in keep) for row in rows]
+    return clean_columns, clean_rows, redacted_names
+
+
 @mcp.tool()
 def query_athena(sql: str) -> str:
     """Execute a SELECT query against AWS Athena and return results as JSON.
@@ -77,12 +107,18 @@ def query_athena(sql: str) -> str:
         cur.close()
         conn.close()
 
+        # Redact PII columns before returning results
+        columns, rows, redacted = _redact_pii(columns, rows)
+
         data = [dict(zip(columns, row)) for row in rows[:500]]
         result = {
             "columns": columns,
             "row_count": len(rows),
             "data": data,
         }
+        if redacted:
+            result["redacted_columns"] = redacted
+            result["notice"] = f"PII columns removed from results: {', '.join(redacted)}"
         if len(rows) > 500:
             result["truncated"] = True
             result["total_rows"] = len(rows)
