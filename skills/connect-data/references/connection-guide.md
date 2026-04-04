@@ -153,6 +153,70 @@ password_env: SNOWFLAKE_PASSWORD
 
 ---
 
+## AWS Athena
+
+**Connection string:** Glue database, S3 staging dir, region, workgroup
+
+**Template:**
+```yaml
+type: athena
+database: my_glue_database
+s3_staging_dir: s3://my-bucket/athena-results/
+region_name: us-east-1
+work_group: primary
+auth_type: default
+```
+
+**SQL Dialect:** Presto/Trino SQL (Athena v2/v3 engine)
+
+**Setup:**
+1. Ensure your Glue catalog database exists with tables
+2. Create an S3 bucket/prefix for query staging results
+3. Configure authentication:
+   - **IAM role/SSO:** No extra config — boto3 picks up credentials automatically
+   - **AWS profile:** Set `auth_type: profile` and `profile_name: your-profile`
+   - **Access keys:** Set `auth_type: credentials`, `access_key_env: AWS_ACCESS_KEY_ID`, `secret_key_env: AWS_SECRET_ACCESS_KEY`
+4. Test: `aws athena start-query-execution --query-string "SELECT 1" --result-configuration OutputLocation=s3://your-bucket/`
+
+**Notes:**
+- Athena is serverless — no infrastructure to manage, pay per query
+- Column descriptions are pulled automatically from Glue catalog COMMENT metadata
+- Athena does not support true TEMP tables — uses CTAS instead
+- TABLESAMPLE BERNOULLI is available for sampling
+
+---
+
+## ClickHouse
+
+**Connection string:** Host, port, database, username, password
+
+**Template:**
+```yaml
+type: clickhouse
+host: localhost
+port: 8123
+database: my_db
+username: default
+password_env: CLICKHOUSE_PASSWORD
+secure: false
+```
+
+**SQL Dialect:** ClickHouse SQL (camelCase functions like dateDiff, nullIf, groupArray)
+
+**Setup:**
+1. Install ClickHouse locally or use ClickHouse Cloud
+2. Store password in environment: `export CLICKHOUSE_PASSWORD="your_password"`
+3. Test: `clickhouse-client -h localhost --port 9000 -q "SELECT 1"` (native) or `curl http://localhost:8123/?query=SELECT+1` (HTTP)
+
+**Notes:**
+- ClickHouse is a columnar OLAP database — extremely fast for analytical queries
+- HTTP interface (port 8123) used by default via clickhouse-connect
+- Set `secure: true` for HTTPS connections (ClickHouse Cloud requires this)
+- Column descriptions from COMMENT clauses are pulled automatically during profiling
+- Uses Memory engine for session-scoped temporary tables
+
+---
+
 ## Connection Testing
 
 For each type, use the ConnectionManager helper:

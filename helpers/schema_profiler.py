@@ -20,6 +20,7 @@ Usage:
     rels = discover_relationships(schema)
 """
 
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -300,6 +301,76 @@ def _profile_table_from_df(df, table_name, row_count, sql_types=None):
 
 
 # ---------------------------------------------------------------------------
+# DDL comment parser (for Athena/ClickHouse description enrichment)
+# ---------------------------------------------------------------------------
+
+def _parse_ddl_comments(ddl_text):
+    """Parse column COMMENT clauses from SHOW CREATE TABLE DDL output.
+
+    Works for both Athena (Presto/Glue) and ClickHouse DDL formats.
+
+    Args:
+        ddl_text: Raw DDL string from SHOW CREATE TABLE.
+
+    Returns:
+        dict mapping column_name -> comment_string. Columns without
+        COMMENT clauses are omitted.
+    """
+    comments = {}
+    col_pattern = re.compile(
+        r"^\s+`?(\w+)`?\s+"
+        r"[A-Za-z0-9_()., ]+"
+        r"\s+COMMENT\s+'((?:[^']*(?:'')*)*)'",
+        re.MULTILINE,
+    )
+    for match in col_pattern.finditer(ddl_text):
+        col_name = match.group(1)
+        comment = match.group(2).replace("''", "'")
+        if comment:
+            comments[col_name] = comment
+    return comments
+
+
+def _enrich_descriptions_from_ddl(connection, table_name, columns, conn_type):
+    """Enrich column descriptions by parsing SHOW CREATE TABLE DDL.
+
+    For Athena and ClickHouse connections, runs SHOW CREATE TABLE and
+    extracts COMMENT clauses to populate column descriptions.
+
+    Args:
+        connection: Active database connection (PyAthena or clickhouse-connect client).
+        table_name: Name of the table to inspect.
+        columns: list[dict] of column profiles to enrich (modified in place).
+        conn_type: Connection type string ("athena" or "clickhouse").
+
+    Returns:
+        list[dict]: The enriched columns list (same object, modified in place).
+    """
+    try:
+        if conn_type == "athena":
+            cur = connection.cursor()
+            cur.execute(f"SHOW CREATE TABLE {table_name}")
+            ddl = "\n".join(row[0] for row in cur.fetchall())
+            cur.close()
+        elif conn_type == "clickhouse":
+            result = connection.query(f"SHOW CREATE TABLE {table_name}")
+            ddl = result.result_rows[0][0] if result.result_rows else ""
+        else:
+            return columns
+
+        comments = _parse_ddl_comments(ddl)
+        for col in columns:
+            col_name = col.get("name", "")
+            if col_name in comments:
+                col["description"] = comments[col_name]
+
+    except Exception:
+        pass  # Enrichment is best-effort; don't break profiling
+
+    return columns
+
+
+# ---------------------------------------------------------------------------
 # Public API: profile_source
 # ---------------------------------------------------------------------------
 
@@ -375,6 +446,25 @@ def profile_source(connection_info=None):
                     "date_columns": [],
                     "date_range": None,
                 })
+    elif src_type in ("athena", "clickhouse"):
+        # Delegate to external warehouse profiler, then enrich descriptions
+        conn_config = connection_info.get("connection_config")
+        if conn_config:
+            result = profile_external_warehouse(conn_config)
+            profiled_tables = result.get("tables", [])
+            # Enrich descriptions from DDL COMMENT clauses
+            try:
+                from helpers.connection_manager import ConnectionManager
+                with ConnectionManager(conn_config) as cm:
+                    for table_profile in profiled_tables:
+                        _enrich_descriptions_from_ddl(
+                            cm._connection,
+                            table_profile["name"],
+                            table_profile.get("columns", []),
+                            src_type,
+                        )
+            except Exception:
+                pass  # Enrichment is best-effort
     else:
         # CSV path
         csv_dir = connection_info.get("csv_dir", "data/")
@@ -935,6 +1025,15 @@ def profile_external_warehouse(connection_config):
                         "date_columns": [],
                         "date_range": None,
                     }
+
+                # Enrich descriptions from DDL for Athena/ClickHouse
+                if cm.connection_type in ("athena", "clickhouse"):
+                    _enrich_descriptions_from_ddl(
+                        cm._connection,
+                        table_name,
+                        table_profile.get("columns", []),
+                        cm.connection_type,
+                    )
 
                 profiled_tables.append(table_profile)
 

@@ -3,7 +3,7 @@
 name: ""
 description: ""
 connection:
-  type: ""  # duckdb, postgres, bigquery, snowflake
+  type: ""  # duckdb, postgres, bigquery, snowflake, athena, clickhouse
   path: ""  # For DuckDB: path to .duckdb file
   # For warehouses, add: host, port, database, schema
 local_data:

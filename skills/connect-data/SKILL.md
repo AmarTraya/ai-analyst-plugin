@@ -36,6 +36,8 @@ Present options:
 4. **PostgreSQL** — "I have a PostgreSQL database"
 5. **BigQuery** — "I have a Google BigQuery dataset"
 6. **Snowflake** — "I have a Snowflake warehouse"
+7. **Athena** — "I have an AWS Athena database (Glue catalog)"
+8. **ClickHouse** — "I have a ClickHouse database"
 
 ### Step 2: Collect Connection Details
 
@@ -58,6 +60,28 @@ Present options:
 - Ask user to fill in required fields
 - **IMPORTANT:** Never ask for or store passwords directly. Guide the user
   to use environment variables (e.g., `$PG_PASSWORD`).
+
+**For Athena:**
+- Ask: "What's your Glue catalog database name?"
+- Ask: "S3 staging directory for query results?" (e.g., `s3://my-bucket/athena-results/`)
+- Ask: "AWS region?" (e.g., `us-east-1`)
+- Ask: "Athena workgroup?" (default: `primary`)
+- Ask: "How do you authenticate?"
+  - **Default** — IAM role, SSO, or environment variables (recommended)
+  - **AWS Profile** — ask for profile name
+  - **Access Key Credentials** — guide to set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars
+- Copy template from `connection_templates/athena.yaml.example`
+- Note: "Column descriptions from your Glue catalog will be pulled automatically during profiling."
+
+**For ClickHouse:**
+- Ask: "ClickHouse host?" (default: `localhost`)
+- Ask: "HTTP port?" (default: `8123`)
+- Ask: "Database name?"
+- Ask: "Username?" (default: `default`)
+- Ask: "Password?" — guide to set `CLICKHOUSE_PASSWORD` env var
+- Ask: "Use HTTPS?" (yes/no, default: no)
+- Copy template from `connection_templates/clickhouse.yaml.example`
+- Note: "Column descriptions from table comments will be pulled automatically during profiling."
 
 ### Step 3: Create Dataset Brain
 1. Generate a dataset_id from the display name (lowercase, hyphens)

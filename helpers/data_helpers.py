@@ -234,7 +234,8 @@ def detect_active_source():
         dict with keys:
             source (str): Dataset ID (e.g., "my_dataset").
             display_name (str): Human-readable name.
-            type (str): "motherduck", "duckdb", or "csv".
+            type (str): "motherduck", "duckdb", "csv", "athena", "clickhouse",
+                        "postgres", "bigquery", "snowflake", or "none".
             schema_prefix (str): SQL schema prefix for queries.
             duckdb_path (str|None): Path to local DuckDB file.
             csv_path (str|None): Path to local CSV directory.
@@ -265,8 +266,11 @@ def detect_active_source():
     }
 
     # --- Determine best available connection type ---
-    # Priority: motherduck > local duckdb > csv
-    if conn.get("type") == "motherduck":
+    # Priority: external warehouses > motherduck > local duckdb > csv
+    conn_type = conn.get("type", "csv")
+    if conn_type in ("athena", "clickhouse", "postgres", "bigquery", "snowflake"):
+        source_info["type"] = conn_type
+    elif conn_type == "motherduck":
         source_info["type"] = "motherduck"
     elif source_info["duckdb_path"] and Path(source_info["duckdb_path"]).exists():
         source_info["type"] = "duckdb"

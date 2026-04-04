@@ -2,7 +2,8 @@
 Connection Manager — unified interface for multi-warehouse connections.
 
 Manages connection lifecycle for different data warehouse backends:
-MotherDuck/DuckDB (native), PostgreSQL, BigQuery, and Snowflake.
+MotherDuck/DuckDB (native), PostgreSQL, BigQuery, Snowflake, Athena,
+and ClickHouse.
 
 Usage:
     from helpers.connection_manager import ConnectionManager
@@ -18,6 +19,8 @@ Usage:
         tables = mgr.list_tables()
 """
 
+import os
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -44,7 +47,50 @@ SUPPORTED_TYPES = {
     "postgres": {"package": "psycopg2", "installed": False},
     "bigquery": {"package": "google-cloud-bigquery", "installed": False},
     "snowflake": {"package": "snowflake-connector-python", "installed": False},
+    "athena": {"package": "pyathena", "installed": False},
+    "clickhouse": {"package": "clickhouse-connect", "installed": False},
 }
+
+
+# ---------------------------------------------------------------------------
+# DDL column parser (shared by Athena and ClickHouse)
+# ---------------------------------------------------------------------------
+
+def _parse_columns_from_ddl(ddl_text):
+    """Parse column names, types, and descriptions from SHOW CREATE TABLE DDL.
+
+    Handles both Athena (Presto) and ClickHouse DDL formats where columns
+    may have COMMENT clauses.
+
+    Args:
+        ddl_text: Raw DDL string from SHOW CREATE TABLE.
+
+    Returns:
+        list[dict]: Each dict has keys: name, type, nullable, description.
+    """
+    columns = []
+    # Match column definitions: name type [optional_stuff] [COMMENT 'desc']
+    # Stops at COMMENT, comma, or closing paren
+    col_pattern = re.compile(
+        r"^\s+`?(\w+)`?\s+"           # column name (optionally backtick-quoted)
+        r"([A-Za-z0-9_()., ]+?)"      # data type
+        r"(?:\s+COMMENT\s+'((?:[^']*(?:'')*)*)')?"  # optional COMMENT 'desc'
+        r"\s*[,)]",                    # trailing comma or closing paren
+        re.MULTILINE,
+    )
+    for match in col_pattern.finditer(ddl_text):
+        col_name = match.group(1)
+        col_type = match.group(2).strip()
+        comment = match.group(3) or ""
+        # Unescape doubled single quotes
+        comment = comment.replace("''", "'")
+        columns.append({
+            "name": col_name,
+            "type": col_type,
+            "nullable": True,
+            "description": comment,
+        })
+    return columns
 
 
 class ConnectionManager:
@@ -139,6 +185,10 @@ class ConnectionManager:
             self._connect_bigquery()
         elif conn_type == "snowflake":
             self._connect_snowflake()
+        elif conn_type == "athena":
+            self._connect_athena()
+        elif conn_type == "clickhouse":
+            self._connect_clickhouse()
         elif conn_type == "csv":
             self._connect_csv()
         else:
@@ -180,6 +230,21 @@ class ConnectionManager:
                 cur.fetchone()
                 cur.close()
                 return {"ok": True, "type": "postgres", "message": "Connected"}
+
+            elif self._conn_type == "athena":
+                if self._connection is None:
+                    self.connect()
+                cur = self._connection.cursor()
+                cur.execute("SELECT 1")
+                cur.fetchone()
+                cur.close()
+                return {"ok": True, "type": "athena", "message": "Connected"}
+
+            elif self._conn_type == "clickhouse":
+                if self._connection is None:
+                    self.connect()
+                self._connection.query("SELECT 1")
+                return {"ok": True, "type": "clickhouse", "message": "Connected"}
 
             elif self._conn_type == "csv":
                 csv_dir = self._csv_dir or self._config.get("csv_path", "")
@@ -226,6 +291,25 @@ class ConnectionManager:
             except Exception:
                 return []
 
+        elif self._conn_type == "athena" and self._connection:
+            try:
+                database = self._schema_prefix or self._config.get("connection", {}).get("database", "")
+                cur = self._connection.cursor()
+                cur.execute(f"SHOW TABLES IN {database}")
+                tables = [row[0] for row in cur.fetchall()]
+                cur.close()
+                return sorted(tables)
+            except Exception:
+                return []
+
+        elif self._conn_type == "clickhouse" and self._connection:
+            try:
+                database = self._schema_prefix or self._config.get("connection", {}).get("database", "")
+                result = self._connection.query(f"SHOW TABLES FROM {database}")
+                return sorted(row[0] for row in result.result_rows)
+            except Exception:
+                return []
+
         elif self._conn_type == "csv":
             csv_dir = self._csv_dir or self._config.get("csv_path", "")
             if Path(csv_dir).is_dir():
@@ -242,6 +326,8 @@ class ConnectionManager:
 
         Returns:
             list[dict]: Each dict has keys: name, type, nullable.
+                For Athena/ClickHouse, also includes description from
+                COMMENT clauses.
         """
         if self._conn_type in ("motherduck", "duckdb") and self._connection:
             try:
@@ -254,6 +340,44 @@ class ConnectionManager:
                         "nullable": row.get("null", "YES") == "YES",
                     })
                 return columns
+            except Exception:
+                return []
+
+        elif self._conn_type == "athena" and self._connection:
+            try:
+                cur = self._connection.cursor()
+                cur.execute(f"SHOW CREATE TABLE {table_name}")
+                ddl = "\n".join(row[0] for row in cur.fetchall())
+                cur.close()
+                # DDL parsing works for base tables; views return
+                # "CREATE VIEW ... AS /* Presto View */" with no columns.
+                columns = _parse_columns_from_ddl(ddl)
+                if columns:
+                    return columns
+                # Fallback: information_schema for views
+                database = self._schema_prefix or self._config.get("connection", {}).get("database", "")
+                cur = self._connection.cursor()
+                cur.execute(
+                    "SELECT column_name, data_type "
+                    "FROM information_schema.columns "
+                    f"WHERE table_schema = '{database}' "
+                    f"AND table_name = '{table_name}' "
+                    "ORDER BY ordinal_position"
+                )
+                columns = [
+                    {"name": row[0], "type": row[1], "nullable": True, "description": ""}
+                    for row in cur.fetchall()
+                ]
+                cur.close()
+                return columns
+            except Exception:
+                return []
+
+        elif self._conn_type == "clickhouse" and self._connection:
+            try:
+                result = self._connection.query(f"SHOW CREATE TABLE {table_name}")
+                ddl = result.result_rows[0][0] if result.result_rows else ""
+                return _parse_columns_from_ddl(ddl)
             except Exception:
                 return []
 
@@ -288,6 +412,21 @@ class ConnectionManager:
         elif self._conn_type == "postgres" and self._connection:
             return pd.read_sql(sql, self._connection)
 
+        elif self._conn_type == "athena" and self._connection:
+            cur = self._connection.cursor()
+            cur.execute(sql)
+            columns = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+            cur.close()
+            return pd.DataFrame(rows, columns=columns)
+
+        elif self._conn_type == "clickhouse" and self._connection:
+            result = self._connection.query(sql)
+            return pd.DataFrame(
+                result.result_rows,
+                columns=[col_name for col_name in result.column_names],
+            )
+
         raise RuntimeError(
             f"SQL queries not supported for connection type: {self._conn_type}. "
             "Use read_table() for CSV data."
@@ -317,6 +456,16 @@ class ConnectionManager:
         elif self._conn_type == "postgres" and self._connection:
             schema = self._schema_prefix or "public"
             return pd.read_sql(f"SELECT * FROM {schema}.{table_name}", self._connection)
+
+        elif self._conn_type == "athena" and self._connection:
+            schema = self._schema_prefix
+            qualified = f'"{schema}"."{table_name}"' if schema else f'"{table_name}"'
+            return self.query(f"SELECT * FROM {qualified}")
+
+        elif self._conn_type == "clickhouse" and self._connection:
+            schema = self._schema_prefix
+            qualified = f"{schema}.{table_name}" if schema else table_name
+            return self.query(f"SELECT * FROM {qualified}")
 
         raise RuntimeError(f"Cannot read table for connection type: {self._conn_type}")
 
@@ -432,3 +581,70 @@ class ConnectionManager:
         )
         self._schema_prefix = conn_config.get("schema", "public")
         self._conn_type = "snowflake"
+
+    def _connect_athena(self):
+        """Connect to AWS Athena via PyAthena. Requires pyathena."""
+        try:
+            from pyathena import connect as athena_connect
+        except ImportError:
+            raise ConnectionError(
+                "pyathena not installed. Install with: pip install pyathena"
+            )
+
+        conn_config = self._config.get("connection", {})
+        s3_staging_dir = conn_config.get("s3_staging_dir")
+        if not s3_staging_dir:
+            raise ConnectionError(
+                "s3_staging_dir is required for Athena connections. "
+                "Set it in the dataset manifest under connection.s3_staging_dir"
+            )
+
+        connect_kwargs = {
+            "s3_staging_dir": s3_staging_dir,
+            "region_name": conn_config.get("region_name", "us-east-1"),
+            "work_group": conn_config.get("work_group", "primary"),
+            "schema_name": conn_config.get("database", ""),
+        }
+
+        auth_type = conn_config.get("auth_type", "default")
+        if auth_type == "profile":
+            profile_name = conn_config.get("profile_name", "")
+            if profile_name:
+                import boto3
+                session = boto3.Session(profile_name=profile_name)
+                connect_kwargs["boto3_session"] = session
+        elif auth_type == "credentials":
+            access_key_env = conn_config.get("access_key_env", "AWS_ACCESS_KEY_ID")
+            secret_key_env = conn_config.get("secret_key_env", "AWS_SECRET_ACCESS_KEY")
+            connect_kwargs["aws_access_key_id"] = os.environ.get(access_key_env, "")
+            connect_kwargs["aws_secret_access_key"] = os.environ.get(secret_key_env, "")
+        # auth_type == "default": no extra kwargs, boto3 chain handles it
+
+        self._connection = athena_connect(**connect_kwargs)
+        self._schema_prefix = conn_config.get("database", "")
+        self._conn_type = "athena"
+
+    def _connect_clickhouse(self):
+        """Connect to ClickHouse via clickhouse-connect. Requires clickhouse-connect."""
+        try:
+            import clickhouse_connect
+        except ImportError:
+            raise ConnectionError(
+                "clickhouse-connect not installed. "
+                "Install with: pip install clickhouse-connect"
+            )
+
+        conn_config = self._config.get("connection", {})
+        password_env = conn_config.get("password_env", "CLICKHOUSE_PASSWORD")
+        password = os.environ.get(password_env, "")
+
+        self._connection = clickhouse_connect.get_client(
+            host=conn_config.get("host", "localhost"),
+            port=int(conn_config.get("port", 8123)),
+            database=conn_config.get("database", "default"),
+            username=conn_config.get("username", "default"),
+            password=password,
+            secure=conn_config.get("secure", False),
+        )
+        self._schema_prefix = conn_config.get("database", "default")
+        self._conn_type = "clickhouse"

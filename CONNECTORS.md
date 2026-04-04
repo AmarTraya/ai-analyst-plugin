@@ -10,6 +10,6 @@ workflows in terms of categories rather than specific products.
 
 | Category        | Placeholder          | Options                                     |
 |----------------|----------------------|----------------------------------------------|
-| Data Warehouse  | `~~data warehouse`   | DuckDB, PostgreSQL, BigQuery, Snowflake      |
+| Data Warehouse  | `~~data warehouse`   | DuckDB, PostgreSQL, BigQuery, Snowflake, Athena, ClickHouse |
 | Chat            | `~~chat`             | Slack, Microsoft Teams, Discord              |
 | Knowledge Base  | `~~knowledge base`   | Notion, Confluence, Google Docs              |

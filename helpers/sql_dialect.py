@@ -19,6 +19,8 @@ from helpers.dialects.duckdb_dialect import DuckDBDialect
 from helpers.dialects.postgres import PostgresDialect
 from helpers.dialects.bigquery import BigQueryDialect
 from helpers.dialects.snowflake import SnowflakeDialect
+from helpers.dialects.athena import AthenaDialect
+from helpers.dialects.clickhouse import ClickHouseDialect
 
 
 # Registry mapping connection_type strings to dialect classes.
@@ -29,6 +31,8 @@ _DIALECT_MAP: dict[str, type[SQLDialect]] = {
     "postgresql": PostgresDialect,
     "bigquery": BigQueryDialect,
     "snowflake": SnowflakeDialect,
+    "athena": AthenaDialect,
+    "clickhouse": ClickHouseDialect,
 }
 
 
