@@ -1,6 +1,6 @@
 {
   "name": "ai-analyst-plugin",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "AI-powered product analytics: ask a business question, get validated findings, publication-quality charts, and a slide deck.",
   "author": {
     "name": "AmarTraya",
@@ -15,5 +15,43 @@
     "collaboration",
     "question",
     "query"
-  ]
+  ],
+  "userConfig": {
+    "knowledge_repo_url": {
+      "description": "GitHub repo URL for knowledge base (SSH or HTTPS). Leave empty to use local_path instead.",
+      "sensitive": false
+    },
+    "knowledge_repo_branch": {
+      "description": "Git branch to use (default: main)",
+      "sensitive": false
+    },
+    "knowledge_local_path": {
+      "description": "Local directory path to knowledge base (for testing or single-user setups). Used when repo URL is empty.",
+      "sensitive": false
+    },
+    "knowledge_datasets": {
+      "description": "Comma-separated dataset IDs to index (e.g., traya-health)",
+      "sensitive": false
+    },
+    "aws_profile": {
+      "description": "AWS profile name for Athena access",
+      "sensitive": false
+    },
+    "athena_database": {
+      "description": "Default Athena database (e.g., trayaprod)",
+      "sensitive": false
+    },
+    "athena_s3_staging": {
+      "description": "S3 path for Athena query results (e.g., s3://bucket/athena-output/)",
+      "sensitive": false
+    },
+    "athena_region": {
+      "description": "AWS region for Athena (e.g., ap-south-1)",
+      "sensitive": false
+    },
+    "athena_workgroup": {
+      "description": "Athena workgroup (e.g., primary)",
+      "sensitive": false
+    }
+  }
 }

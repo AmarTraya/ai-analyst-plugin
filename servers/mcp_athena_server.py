@@ -5,24 +5,38 @@ via MCP to execute Athena queries without needing credentials in
 the sandbox.
 
 Usage:
-    python helpers/mcp_athena_server.py
+    python servers/mcp_athena_server.py
+
+Environment variables:
+    ATHENA_CONFIG: Path to JSON config file with connection details.
+    Falls back to individual env vars if config file not found.
 """
 
 import json
 import os
+from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("athena-query")
 
-# Connection config — reads from env or defaults
-ATHENA_CONFIG = {
-    "database": os.environ.get("ATHENA_DATABASE", "trayaprod"),
-    "s3_staging_dir": os.environ.get("ATHENA_S3_STAGING", "s3://traya-dp-prod/athena-output/"),
-    "region_name": os.environ.get("ATHENA_REGION", "ap-south-1"),
-    "work_group": os.environ.get("ATHENA_WORKGROUP", "jupyter"),
-    "profile_name": os.environ.get("AWS_PROFILE", "prod"),
-}
+
+# Connection config — reads from config file or env vars
+def _load_athena_config() -> dict:
+    """Load Athena config from JSON file, falling back to env vars."""
+    config_path = os.environ.get("ATHENA_CONFIG", "")
+    if config_path and Path(config_path).exists():
+        return json.loads(Path(config_path).read_text())
+    return {
+        "database": os.environ.get("ATHENA_DATABASE", "trayaprod"),
+        "s3_staging_dir": os.environ.get("ATHENA_S3_STAGING", "s3://traya-dp-prod/athena-output/"),
+        "region_name": os.environ.get("ATHENA_REGION", "ap-south-1"),
+        "work_group": os.environ.get("ATHENA_WORKGROUP", "jupyter"),
+        "profile_name": os.environ.get("AWS_PROFILE", "prod"),
+    }
+
+
+ATHENA_CONFIG = _load_athena_config()
 
 
 def _get_connection():
