@@ -1,5 +1,5 @@
 {
-  "name": "ai-analyst",
+  "name": "ai-analyst-plugin",
   "version": "2.0.1",
   "description": "AI-powered product analytics: ask a business question, get validated findings, publication-quality charts, and a slide deck.",
   "author": { "name": "AmarTraya" }
