@@ -16,6 +16,18 @@
     "question",
     "query"
   ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "diff -q \"${CLAUDE_PLUGIN_ROOT}/requirements.txt\" \"${CLAUDE_PLUGIN_DATA}/requirements.txt\" >/dev/null 2>&1 || (cd \"${CLAUDE_PLUGIN_DATA}\" && cp \"${CLAUDE_PLUGIN_ROOT}/requirements.txt\" . && pip install -r requirements.txt) || rm -f \"${CLAUDE_PLUGIN_DATA}/requirements.txt\""
+          }
+        ]
+      }
+    ]
+  },
   "userConfig": {
     "knowledge_repo_url": {
       "title": "Knowledge Repo URL",
