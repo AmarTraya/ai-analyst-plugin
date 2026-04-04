@@ -9,8 +9,7 @@
       "name": "ai-analyst-plugin",
       "source": {
         "source": "github",
-        "repo": "AmarTraya/ai-analyst-plugin",
-        "ref": "knowlege_external"
+        "repo": "AmarTraya/ai-analyst-plugin"
       },
       "description": "AI-powered product analytics: ask a business question, get validated findings, publication-quality charts, and a slide deck.",
       "version": "2.2.0",

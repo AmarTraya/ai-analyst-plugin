@@ -18,39 +18,57 @@
   ],
   "userConfig": {
     "knowledge_repo_url": {
-      "description": "GitHub repo URL for knowledge base (SSH or HTTPS). Leave empty to use local_path instead.",
+      "title": "Knowledge Repo URL",
+      "description": "GitHub repo URL for knowledge base (SSH or HTTPS). Leave empty to use local path instead.",
+      "type": "string",
       "sensitive": false
     },
     "knowledge_repo_branch": {
+      "title": "Knowledge Repo Branch",
       "description": "Git branch to use (default: main)",
+      "type": "string",
       "sensitive": false
     },
     "knowledge_local_path": {
-      "description": "Local directory path to knowledge base (for testing or single-user setups). Used when repo URL is empty.",
+      "title": "Knowledge Local Path",
+      "description": "Local directory path to knowledge base (for testing). Used when repo URL is empty.",
+      "type": "directory",
       "sensitive": false
     },
     "knowledge_datasets": {
+      "title": "Dataset IDs",
       "description": "Comma-separated dataset IDs to index (e.g., traya-health)",
+      "type": "string",
       "sensitive": false
     },
     "aws_profile": {
+      "title": "AWS Profile",
       "description": "AWS profile name for Athena access",
+      "type": "string",
       "sensitive": false
     },
     "athena_database": {
+      "title": "Athena Database",
       "description": "Default Athena database (e.g., trayaprod)",
+      "type": "string",
       "sensitive": false
     },
     "athena_s3_staging": {
+      "title": "Athena S3 Staging",
       "description": "S3 path for Athena query results (e.g., s3://bucket/athena-output/)",
+      "type": "string",
       "sensitive": false
     },
     "athena_region": {
+      "title": "Athena Region",
       "description": "AWS region for Athena (e.g., ap-south-1)",
+      "type": "string",
       "sensitive": false
     },
     "athena_workgroup": {
+      "title": "Athena Workgroup",
       "description": "Athena workgroup (e.g., primary)",
+      "type": "string",
       "sensitive": false
     }
   }
