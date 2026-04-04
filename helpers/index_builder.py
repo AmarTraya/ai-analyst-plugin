@@ -41,15 +41,19 @@ def extract_markdown_sections(filepath: Path) -> dict[str, str]:
     return sections
 
 
-def _context_line(content: str, max_len: int = 100) -> str:
+def _context_line(content: str, max_len: int = 60) -> str:
     """Extract the first meaningful sentence from content as a context line."""
     for line in content.splitlines():
-        cleaned = line.strip().lstrip("-*> ").strip()
+        stripped = line.strip()
+        # Skip markdown table rows and separators
+        if stripped.startswith("|") or stripped.startswith("---"):
+            continue
+        cleaned = stripped.lstrip("-*> ").strip()
         cleaned = re.sub(r"\*\*(.+?)\*\*", r"\1", cleaned)  # remove bold markers
         cleaned = re.sub(r"`(.+?)`", r"\1", cleaned)  # remove backticks
         if len(cleaned) > 10:
             return cleaned[:max_len]
-    return content[:max_len].strip()
+    return ""
 
 
 def extract_yaml_terms(filepath: Path, kind: str) -> list[dict]:
@@ -148,52 +152,43 @@ def build_index(repo_dir: Path | str, dataset_id: str) -> dict:
     if mandatory_path.exists():
         mandatory_data = yaml.safe_load(mandatory_path.read_text(encoding="utf-8")) or {}
         for section_ref in mandatory_data.get("sections", []):
-            # Read context from the actual file
-            md_file = ds_dir / section_ref["file"]
-            context = ""
-            if md_file.exists():
-                sections = extract_markdown_sections(md_file)
-                content = sections.get(section_ref["section"], "")
-                context = _context_line(content) if content else ""
             index["mandatory"].append({
                 "file": section_ref["file"],
                 "section": section_ref["section"],
-                "context": context,
             })
     else:
         # Fallback: all quirks sections become mandatory
         quirks_path = ds_dir / "quirks.md"
         if quirks_path.exists():
-            for heading, content in extract_markdown_sections(quirks_path).items():
+            for heading in extract_markdown_sections(quirks_path):
                 index["mandatory"].append({
                     "file": "quirks.md",
                     "section": heading,
-                    "context": _context_line(content),
                 })
 
     # --- Quirks sections ---
+    mandatory_sections = {m["section"] for m in index["mandatory"]}
     quirks_path = ds_dir / "quirks.md"
     if quirks_path.exists():
         for heading, content in extract_markdown_sections(quirks_path).items():
             ctx = _context_line(content)
             _add_term(heading, "quirks.md", heading, ctx)
             # Extract table/column names mentioned in backticks
-            for ref in re.findall(r"`([a-zA-Z_][a-zA-Z0-9_.]*)`", content):
-                _add_term(ref, "quirks.md", heading, ctx)
+            # Skip mandatory sections — they're already force-included
+            if heading not in mandatory_sections:
+                for ref in re.findall(r"`([a-zA-Z_][a-zA-Z0-9_.]*)`", content):
+                    _add_term(ref, "quirks.md", heading, f"See {heading}")
 
-    # --- Schema sections ---
+    # --- Schema sections (table names only, not columns) ---
     schema_path = ds_dir / "schema.md"
     if schema_path.exists():
         for heading, content in extract_markdown_sections(schema_path).items():
-            ctx = _context_line(content)
+            ctx = _context_line(content) or heading  # fallback to full table name
             _add_term(heading, "schema.md", heading, ctx)
             # Also index the short table name (without database prefix)
             if "." in heading:
                 short_name = heading.split(".")[-1]
                 _add_term(short_name, "schema.md", heading, ctx)
-            # Index column names
-            for col in _extract_column_names(content):
-                _add_term(col, "schema.md", heading, ctx)
 
     # --- Metrics ---
     metrics_dir = ds_dir / "metrics"
