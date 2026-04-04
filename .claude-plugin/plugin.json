@@ -1,6 +1,11 @@
 {
   "name": "ai-analyst-plugin",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "AI-powered product analytics: ask a business question, get validated findings, publication-quality charts, and a slide deck.",
-  "author": { "name": "AmarTraya" }
+  "author": {
+    "name": "AmarTraya",
+    "email": "amarjeetsingh@traya.health",
+    "url": "https://github.com/AmarTraya"
+  },
+  "repository": "https://github.com/AmarTraya/ai-analyst-plugin"
 }
