@@ -17,12 +17,22 @@ You are onboarding a new user. Be conversational, not interrogative — you're a
 
 ```bash
 python3 --version  # Need 3.10+
-pip install --break-system-packages pandas numpy matplotlib duckdb scipy seaborn pyyaml
+pip install --break-system-packages pandas numpy matplotlib duckdb scipy seaborn pyyaml pyathena boto3 mcp-clickhouse "mcp[cli]"
+```
+
+Ask the user: **"What is the path to your repo for the knowledge base?"**
+
+Use their answer as the workspace root. If they don't provide one, default to the current working directory.
+
+**Save the repo path** to `.knowledge/active.yaml` as `repo_path` so every future Cowork session automatically points to it:
+```yaml
+repo_path: /path/to/user/repo
+active_dataset: <dataset-name>
 ```
 
 Create workspace structure:
 ```
-{workspace}/
+{repo-path}/
 ├── .knowledge/
 │   ├── user/
 │   ├── datasets/
@@ -34,6 +44,8 @@ Create workspace structure:
 ├── outputs/
 └── data/
 ```
+
+**Session start behavior:** At the beginning of every session, read `repo_path` from `.knowledge/active.yaml` and use it as the workspace root. All skills should resolve `<workspace>` from this path. If `repo_path` is missing, prompt the user to run `/setup`.
 
 ## Phase 1: Role & Team
 
