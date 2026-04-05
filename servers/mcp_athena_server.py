@@ -14,7 +14,13 @@ Environment variables:
 
 import json
 import os
+import sys
 from pathlib import Path
+
+# Add plugin deps directory to path (installed by SessionStart hook)
+_deps_dir = os.environ.get("CLAUDE_PLUGIN_DATA", "")
+if _deps_dir:
+    sys.path.insert(0, str(Path(_deps_dir) / "deps"))
 
 from mcp.server.fastmcp import FastMCP
 

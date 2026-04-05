@@ -17,11 +17,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-import yaml
-from mcp.server.fastmcp import FastMCP
+# Add plugin deps directory to path (installed by SessionStart hook)
+_deps_dir = os.environ.get("CLAUDE_PLUGIN_DATA", "")
+if _deps_dir:
+    sys.path.insert(0, str(Path(_deps_dir) / "deps"))
 
 # Add project root to path so we can import helpers
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import yaml
+from mcp.server.fastmcp import FastMCP
 
 from helpers.index_builder import build_index, extract_markdown_sections
 

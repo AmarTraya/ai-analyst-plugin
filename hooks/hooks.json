@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pip install -q mcp[cli] pyyaml pyathena boto3 2>/dev/null || true"
+            "command": "python3 -m pip install -q -t \"${CLAUDE_PLUGIN_DATA}/deps\" -r \"${CLAUDE_PLUGIN_ROOT}/requirements.txt\" 2>/dev/null || true"
           }
         ]
       }
