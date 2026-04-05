@@ -49,18 +49,17 @@ If no active dataset, prompt: "No dataset connected. Use `/connect-data` or poin
 
 ## Step 2: Chart Standards (If Generating Any Visuals)
 
-Even in exploration mode, apply SWD methodology:
+**Use exploration mode for data discovery:** Call `explore_style()` instead of `swd_style()`. This gives you a multi-color palette, white background, and grid lines — better for spotting patterns and comparing distributions. Switch to `swd_style()` only when creating final deliverable charts.
 
 ```python
 import sys
 sys.path.insert(0, '<plugin-path>/helpers')
-from chart_helpers import swd_style, highlight_bar, action_title, save_chart
+from chart_helpers import explore_style, highlight_bar, histogram, box_plot, action_title, save_chart
 ```
 
-- **Call `swd_style()` before every chart**
-- Background: `#F7F6F2`
-- Use gray for context, amber `#D97706` only for notable findings
-- Takeaway titles (not generic labels)
+- **Call `explore_style()` before every chart** (multi-color, grid on)
+- Use the full chart catalog — histograms for distributions, box plots for comparisons, sparklines for dashboards
+- Descriptive titles are fine in exploration mode
 - Clean formatting: no rotated text, remove top/right spines
 
 ## Step 3: Quality Flags

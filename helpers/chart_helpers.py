@@ -30,6 +30,7 @@ Usage:
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 
 import matplotlib.dates as mdates
@@ -58,6 +59,23 @@ COLORS = {
     # Semantic aliases for analytical chart builders
     "primary":  "#D97706",   # same as action — main data series
     "muted":    "#9CA3AF",   # same as gray400 — supporting elements
+}
+
+# Exploration palette — richer colors for data discovery
+EXPLORE_COLORS = {
+    "blue":    "#4878CF",
+    "orange":  "#EE854A",
+    "green":   "#6ACC64",
+    "red":     "#D65F5F",
+    "purple":  "#956CB4",
+    "brown":   "#8C613C",
+    "pink":    "#DC7EC0",
+    "gray":    "#797979",
+    "yellow":  "#D5BB67",
+    "teal":    "#82C6E2",
+    "bg":      "#FFFFFF",
+    "text":    "#333333",
+    "grid":    "#E0E0E0",
 }
 
 # ---------------------------------------------------------------------------
@@ -153,6 +171,63 @@ def swd_style(theme: dict | None = None):
         plt.rcParams["axes.labelcolor"] = text
 
     return dict(COLORS)
+
+
+def explore_style():
+    """Apply exploration style — multi-color, white background, grid on.
+
+    Use for data discovery, explore-data skill, and L1-L2 questions.
+    Returns the EXPLORE_COLORS palette.
+    """
+    cycle_colors = [
+        EXPLORE_COLORS["blue"], EXPLORE_COLORS["orange"], EXPLORE_COLORS["green"],
+        EXPLORE_COLORS["red"], EXPLORE_COLORS["purple"], EXPLORE_COLORS["brown"],
+        EXPLORE_COLORS["pink"], EXPLORE_COLORS["gray"], EXPLORE_COLORS["yellow"],
+        EXPLORE_COLORS["teal"],
+    ]
+    plt.rcParams.update({
+        "figure.facecolor": "#FFFFFF",
+        "axes.facecolor": "#FFFFFF",
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "axes.grid": True,
+        "grid.color": EXPLORE_COLORS["grid"],
+        "grid.linewidth": 0.5,
+        "grid.alpha": 0.7,
+        "axes.prop_cycle": plt.cycler("color", cycle_colors),
+        "font.family": "sans-serif",
+        "font.size": 10,
+        "axes.titlesize": 13,
+        "axes.titleweight": "bold",
+        "text.color": EXPLORE_COLORS["text"],
+        "axes.labelcolor": EXPLORE_COLORS["text"],
+        "figure.figsize": (10, 6),
+        "figure.dpi": 150,
+    })
+    return dict(EXPLORE_COLORS)
+
+
+@contextmanager
+def chart_mode(mode: str = "presentation"):
+    """Context manager to temporarily set chart style.
+
+    Args:
+        mode: "presentation" for SWD style, "exploration" for multi-color.
+
+    Usage:
+        with chart_mode("exploration") as palette:
+            fig, ax = plt.subplots()
+            ax.plot(x, y)
+    """
+    saved = dict(plt.rcParams)
+    try:
+        if mode == "exploration":
+            palette = explore_style()
+        else:
+            palette = swd_style()
+        yield palette
+    finally:
+        plt.rcParams.update(saved)
 
 
 # ---------------------------------------------------------------------------
@@ -1948,3 +2023,373 @@ def waterfall_chart(ax, labels: list[str], values: list[float],
     ax.set_axisbelow(True)
     if title:
         action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Survival / Kaplan-Meier Curve
+# ---------------------------------------------------------------------------
+
+
+def survival_curve(ax, time_points, survival_data: dict[str, list[float]],
+                   title=None, xlabel="Time", ylabel="Survival Probability",
+                   highlight=None):
+    """Plot survival/Kaplan-Meier curves for time-to-event analysis.
+
+    Args:
+        ax: Matplotlib axes.
+        time_points: X-axis values (time periods).
+        survival_data: {group_label: [survival_probabilities]}.
+        highlight: Group to highlight in action color.
+        title, xlabel, ylabel: Labels.
+    """
+    for group, probs in survival_data.items():
+        is_hl = (group == highlight)
+        color = COLORS["action"] if is_hl else COLORS["gray400"]
+        lw = 2.5 if is_hl else 1.2
+        alpha = 1.0 if is_hl else 0.5
+        t = time_points[:len(probs)]
+        ax.step(t, probs, where="post", color=color, linewidth=lw, alpha=alpha)
+        if is_hl:
+            # Confidence band (±5% illustrative)
+            upper = [min(p * 1.05, 1.0) for p in probs]
+            lower = [p * 0.95 for p in probs]
+            ax.fill_between(t, lower, upper, step="post", alpha=0.15, color=color)
+            ax.annotate(group, xy=(t[-1], probs[-1]), fontsize=9,
+                        fontweight="bold", color=color,
+                        xytext=(5, 0), textcoords="offset points", va="center")
+
+    ax.set_xlabel(xlabel, fontsize=10)
+    ax.set_ylabel(ylabel, fontsize=10)
+    ax.set_ylim(0, 1.05)
+    ax.yaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Pareto Chart — bar + cumulative line
+# ---------------------------------------------------------------------------
+
+
+def pareto_chart(ax, labels: list[str], values: list[float],
+                 title=None, threshold=0.8, ylabel=""):
+    """Plot a Pareto chart (sorted bars + cumulative % line).
+
+    Args:
+        ax: Matplotlib axes.
+        labels: Category labels.
+        values: Values per category.
+        threshold: Cumulative threshold line (default 80%).
+        ylabel: Y-axis label.
+        title: Chart title.
+    """
+    # Sort descending
+    paired = sorted(zip(values, labels), reverse=True)
+    sorted_vals = [p[0] for p in paired]
+    sorted_labels = [p[1] for p in paired]
+    total = sum(sorted_vals)
+    cumulative = np.cumsum(sorted_vals) / total
+
+    # Find threshold crossing
+    threshold_idx = next((i for i, c in enumerate(cumulative) if c >= threshold), len(cumulative) - 1)
+
+    # Bars — above threshold in action color, below in gray
+    bar_colors = [COLORS["action"] if i <= threshold_idx else COLORS["gray400"]
+                  for i in range(len(sorted_vals))]
+    x = range(len(sorted_vals))
+    ax.bar(x, sorted_vals, color=bar_colors, width=0.7, edgecolor="none")
+
+    # Cumulative line on secondary axis
+    ax2 = ax.twinx()
+    ax2.plot(x, cumulative, color=COLORS["gray600"], linewidth=1.5, marker="o", markersize=3)
+    ax2.axhline(threshold, color=COLORS["accent"], linewidth=0.8, linestyle="--", alpha=0.6)
+    ax2.set_ylabel("Cumulative %", fontsize=9, color=COLORS["gray600"])
+    ax2.set_ylim(0, 1.05)
+    ax2.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    ax2.spines["top"].set_visible(False)
+
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(sorted_labels, fontsize=8, rotation=45, ha="right")
+    ax.set_ylabel(ylabel, fontsize=10)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Bullet Chart — compact KPI display
+# ---------------------------------------------------------------------------
+
+
+def bullet_chart(ax, label: str, actual: float, target: float,
+                 ranges: list[float] = None, title=None):
+    """Plot a horizontal bullet chart (Tufte-style).
+
+    Args:
+        ax: Matplotlib axes.
+        label: Metric label.
+        actual: Actual value.
+        target: Target value.
+        ranges: [poor_max, ok_max, good_max] thresholds. Auto-generated if None.
+        title: Chart title.
+    """
+    if ranges is None:
+        mx = max(actual, target) * 1.2
+        ranges = [mx * 0.33, mx * 0.66, mx]
+
+    # Background ranges in graduated grays
+    grays = [COLORS["gray200"], COLORS["gray100"], "#F9FAFB"]
+    for i, (rng, gray) in enumerate(zip(ranges, grays)):
+        left = ranges[i - 1] if i > 0 else 0
+        ax.barh(0, rng - left, left=left, height=0.6, color=gray, edgecolor="none")
+
+    # Actual value bar
+    ax.barh(0, actual, height=0.25, color=COLORS["action"], edgecolor="none")
+
+    # Target marker
+    ax.plot(target, 0, marker="|", color=COLORS["gray900"], markersize=20, markeredgewidth=2)
+
+    ax.set_yticks([0])
+    ax.set_yticklabels([label], fontsize=10)
+    ax.set_xlim(0, ranges[-1] * 1.05)
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(left=False)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Small Multiples — grid of identical charts
+# ---------------------------------------------------------------------------
+
+
+def small_multiples(fig, data_dict: dict, chart_fn, cols=3, title=None,
+                    sharey=True, **chart_kwargs):
+    """Create a grid of small identical charts for comparison.
+
+    Args:
+        fig: Matplotlib figure.
+        data_dict: {panel_label: (x_data, y_data)}.
+        chart_fn: Callable(ax, x, y, **kwargs) that draws on one panel.
+        cols: Number of columns in grid.
+        title: Overall figure title.
+        sharey: Share y-axis across panels.
+        **chart_kwargs: Passed to chart_fn.
+    """
+    n = len(data_dict)
+    rows = (n + cols - 1) // cols
+    fig.clear()
+    axes = fig.subplots(rows, cols, sharey=sharey, squeeze=False)
+
+    for idx, (label, (x, y)) in enumerate(data_dict.items()):
+        r, c = divmod(idx, cols)
+        ax = axes[r][c]
+        chart_fn(ax, x, y, **chart_kwargs)
+        ax.set_title(label, fontsize=9, fontweight="bold", color=COLORS["gray900"])
+
+    # Hide unused panels
+    for idx in range(n, rows * cols):
+        r, c = divmod(idx, cols)
+        axes[r][c].set_visible(False)
+
+    if title:
+        fig.suptitle(title, fontsize=14, fontweight="bold", color=COLORS["gray900"], y=1.02)
+    fig.tight_layout()
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Sparkline Grid — compact multi-metric dashboard
+# ---------------------------------------------------------------------------
+
+
+def sparkline_grid(ax, data_dict: dict[str, list[float]], title=None,
+                   highlight_last=True):
+    """Plot a grid of sparklines — one per metric, compact dashboard style.
+
+    Args:
+        ax: Matplotlib axes.
+        data_dict: {metric_label: [values over time]}.
+        title: Overall title.
+        highlight_last: Dot on the last value.
+    """
+    ax.axis("off")
+    n = len(data_dict)
+    row_height = 1.0 / max(n, 1)
+
+    for i, (label, values) in enumerate(data_dict.items()):
+        y_base = 1.0 - (i + 1) * row_height
+        # Normalize to fit in row
+        vmin, vmax = min(values), max(values)
+        rng = vmax - vmin if vmax != vmin else 1
+        norm = [(v - vmin) / rng * row_height * 0.7 + y_base + row_height * 0.15
+                for v in values]
+        x = np.linspace(0.2, 0.75, len(values))
+
+        ax.plot(x, norm, color=COLORS["gray400"], linewidth=1.2,
+                transform=ax.transAxes, clip_on=False)
+        if highlight_last and len(values) > 0:
+            ax.plot(x[-1], norm[-1], "o", color=COLORS["action"], markersize=4,
+                    transform=ax.transAxes, clip_on=False)
+
+        # Label on left
+        ax.text(0.0, y_base + row_height * 0.5, label, fontsize=9,
+                transform=ax.transAxes, va="center", color=COLORS["gray900"])
+        # Value on right
+        ax.text(0.85, y_base + row_height * 0.5, f"{values[-1]:,.0f}",
+                fontsize=9, fontweight="bold", transform=ax.transAxes,
+                va="center", color=COLORS["gray900"])
+
+    if title:
+        ax.set_title(title, fontsize=13, fontweight="bold", color=COLORS["gray900"],
+                      loc="left", pad=10)
+
+
+# ---------------------------------------------------------------------------
+# Bump Chart — rank changes over time
+# ---------------------------------------------------------------------------
+
+
+def bump_chart(ax, periods: list[str], rankings: dict[str, list[int]],
+               title=None, highlight=None):
+    """Plot a bump chart showing rank changes over time.
+
+    Args:
+        ax: Matplotlib axes.
+        periods: Period labels (x-axis).
+        rankings: {item_label: [rank_per_period]}. Rank 1 = best.
+        highlight: Item to highlight.
+        title: Chart title.
+    """
+    x = range(len(periods))
+    max_rank = max(r for ranks in rankings.values() for r in ranks)
+
+    for label, ranks in rankings.items():
+        is_hl = (label == highlight)
+        color = COLORS["action"] if is_hl else COLORS["gray400"]
+        lw = 2.5 if is_hl else 1.2
+        alpha = 1.0 if is_hl else 0.4
+        rx = x[:len(ranks)]
+        ax.plot(rx, ranks, color=color, linewidth=lw, alpha=alpha, marker="o", markersize=5)
+        # Labels at start and end
+        if len(ranks) >= 1:
+            ax.annotate(label, xy=(rx[0], ranks[0]), fontsize=8, color=color,
+                        xytext=(-40, 0), textcoords="offset points", va="center")
+
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(periods, fontsize=9)
+    ax.set_ylabel("Rank", fontsize=10)
+    ax.invert_yaxis()
+    ax.set_ylim(max_rank + 0.5, 0.5)
+    ax.yaxis.grid(True, color=COLORS["gray200"], linewidth=0.5)
+    ax.set_axisbelow(True)
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Marimekko / Mosaic Chart — variable-width stacked bars
+# ---------------------------------------------------------------------------
+
+
+def marimekko(ax, labels: list[str], widths: list[float],
+              segments: dict[str, list[float]], title=None,
+              highlight_segment=None):
+    """Plot a Marimekko (mosaic) chart — variable-width stacked bars.
+
+    Args:
+        ax: Matplotlib axes.
+        labels: Bar labels (e.g., channels).
+        widths: Bar widths (e.g., order volume per channel).
+        segments: {segment_label: [proportion_per_bar]}. Each list sums to ~1.0 per bar.
+        highlight_segment: Segment to highlight in action color.
+        title: Chart title.
+    """
+    total_width = sum(widths)
+    norm_widths = [w / total_width for w in widths]
+
+    seg_colors = {}
+    gray_shades = ["#D1D5DB", "#9CA3AF", "#6B7280", "#4B5563"]
+    for i, seg_name in enumerate(segments.keys()):
+        if seg_name == highlight_segment:
+            seg_colors[seg_name] = COLORS["action"]
+        else:
+            seg_colors[seg_name] = gray_shades[i % len(gray_shades)]
+
+    left = 0.0
+    for j, (lbl, nw) in enumerate(zip(labels, norm_widths)):
+        bottom = 0.0
+        for seg_name, seg_values in segments.items():
+            height = seg_values[j]
+            ax.bar(left + nw / 2, height, width=nw * 0.95, bottom=bottom,
+                   color=seg_colors[seg_name], edgecolor=COLORS["white"], linewidth=0.5)
+            if height > 0.08:
+                ax.text(left + nw / 2, bottom + height / 2, f"{height:.0%}",
+                        ha="center", va="center", fontsize=7, color=COLORS["white"])
+            bottom += height
+        # Bar label at bottom
+        ax.text(left + nw / 2, -0.04, lbl, ha="center", va="top", fontsize=8,
+                color=COLORS["gray900"])
+        left += nw
+
+    ax.set_xlim(0, 1)
+    ax.set_ylim(-0.08, 1.0)
+    ax.set_ylabel("Proportion", fontsize=10)
+    ax.set_xticks([])
+
+    # Legend
+    handles = [plt.Rectangle((0, 0), 1, 1, color=seg_colors[s]) for s in segments]
+    ax.legend(handles, list(segments.keys()), loc="upper right", fontsize=8, frameon=False)
+
+    if title:
+        action_title(ax, title)
+
+
+# ---------------------------------------------------------------------------
+# Ridge Plot — overlapping density distributions
+# ---------------------------------------------------------------------------
+
+
+def ridge_plot(fig, data_dict: dict[str, list[float]], title=None,
+               highlight=None, overlap=0.5, bins=50):
+    """Plot overlapping density curves stacked vertically.
+
+    Args:
+        fig: Matplotlib figure.
+        data_dict: {group_label: [values]}.
+        highlight: Group to highlight in action color.
+        overlap: Amount of vertical overlap (0-1).
+        bins: Number of bins for density estimation.
+        title: Overall title.
+    """
+    n = len(data_dict)
+    fig.clear()
+    axes = fig.subplots(n, 1, sharex=True)
+    if n == 1:
+        axes = [axes]
+
+    all_vals = [v for vals in data_dict.values() for v in vals]
+    x_min, x_max = min(all_vals), max(all_vals)
+    for i, (label, values) in enumerate(data_dict.items()):
+        ax = axes[i]
+        is_hl = (label == highlight)
+        color = COLORS["action"] if is_hl else COLORS["gray400"]
+        alpha = 0.7 if is_hl else 0.4
+
+        # Simple histogram-based density
+        counts, bin_edges = np.histogram(values, bins=bins, range=(x_min, x_max), density=True)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        ax.fill_between(bin_centers, counts, alpha=alpha, color=color)
+        ax.plot(bin_centers, counts, color=color, linewidth=1.2)
+
+        ax.set_yticks([])
+        ax.set_ylabel(label, fontsize=9, rotation=0, ha="right", va="center")
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    axes[-1].set_xlabel("Value", fontsize=10)
+    if title:
+        fig.suptitle(title, fontsize=13, fontweight="bold", color=COLORS["gray900"], y=1.02)
+    fig.tight_layout()
+    fig.subplots_adjust(hspace=-overlap * 0.3)
+    return fig

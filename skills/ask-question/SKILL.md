@@ -144,13 +144,45 @@ Write queries appropriate to the level:
 
 ## Step 4: Create Charts (L2+ Only)
 
-**THIS IS CRITICAL.** Every chart must follow SWD (Storytelling with Data) methodology. Read the helper file for available functions:
+### Chart Mode Selection
 
-```
-Read file: <plugin-path>/helpers/chart_helpers.py
+Choose the chart mode based on question level:
+- **L1-L2 (exploration)**: Call `explore_style()` — multi-color, white background, grid on. Good for quick discovery and comparisons.
+- **L3+ (presentation)**: Call `swd_style()` — gray + highlight, takeaway titles, decluttered. Good for storytelling and stakeholder output.
+
+Both modes share: no top/right spines, direct labels preferred, 150 DPI, (10,6) default figsize.
+
+### Available Chart Types
+
+```python
+from helpers.chart_helpers import (
+    # Style modes
+    swd_style, explore_style, chart_mode,
+    # Standard
+    highlight_bar, highlight_line, stacked_bar, grouped_bar, donut_chart,
+    # Distribution
+    histogram, box_plot, ridge_plot,
+    # Comparison
+    slope_chart, diverging_bar, bullet_chart, bump_chart,
+    # Composition
+    treemap, marimekko, donut_chart,
+    # Flow
+    funnel_waterfall, waterfall_chart, sankey_flow,
+    # Time Series
+    forecast_plot, control_chart_plot, cohort_curves, survival_curve, sparkline_grid,
+    # Spatial
+    geo_bar_chart,
+    # Dashboard
+    big_number_layout, sensitivity_table, small_multiples, sparkline_grid,
+    # Statistical
+    pareto_chart, retention_heatmap,
+    # Utilities
+    action_title, annotate_point, save_chart, format_date_axis,
+    add_trendline, add_event_span, fill_between_lines,
+)
 ```
 
-### Mandatory Chart Standards
+### Chart Standards (Presentation Mode — L3+)
 
 **Colors:**
 - Primary highlight (the thing that matters): `#D97706` (Action Amber)
@@ -263,9 +295,9 @@ Tailor these to the actual findings — never give generic suggestions.
 ## Important Reminders
 
 - **Always use chart_helpers.py** — never write raw matplotlib styling from scratch
-- **Always call swd_style()** before any chart
-- **Titles are takeaways**, not descriptions
-- **Gray everything, color only the story**
+- **Call `swd_style()` for L3+ or `explore_style()` for L1-L2** — match mode to question level
+- **Titles are takeaways** for presentation mode, descriptive for exploration mode
 - **Validate before presenting** — check that numbers add up
 - **Be specific** — "churn is 4.3% for Social Media users" not "churn varies by channel"
+- **Choose the right chart type** — use the full catalog above, not just bar/line for everything
 - If the user asks you to make changes to chart style, incorporate them and remember for future charts
