@@ -17,10 +17,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Add plugin deps directory to path (installed by SessionStart hook)
-_deps_dir = os.environ.get("CLAUDE_PLUGIN_DATA", "")
-if _deps_dir:
-    sys.path.insert(0, str(Path(_deps_dir) / "deps"))
+# Auto-install dependencies if missing
+try:
+    import mcp  # noqa: F401
+    import yaml  # noqa: F401
+except ImportError:
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-q", "mcp[cli]", "pyyaml"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
 
 # Add project root to path so we can import helpers
 sys.path.insert(0, str(Path(__file__).parent.parent))
