@@ -318,12 +318,19 @@ def refresh_knowledge() -> str:
         JSON with status, whether changes were detected, and current commit hash.
     """
     try:
+        config = _load_config()
+        repo_path = _repo_dir()
+
+        # Git mode: pull latest
         changed, commit_hash = _clone_or_pull()
 
+        # Local mode: always rebuild (no git to detect changes)
+        if not config.get("repo_url") and config.get("local_path"):
+            changed = True
+            commit_hash = ""
+
         if changed:
-            # Rebuild indexes for all cached datasets
             _index_cache.clear()
-            repo_path = _repo_dir()
             datasets_dir = repo_path / "datasets"
             if datasets_dir.is_dir():
                 for ds_dir in datasets_dir.iterdir():
@@ -334,6 +341,7 @@ def refresh_knowledge() -> str:
             "status": "ok",
             "changes": changed,
             "commit_hash": commit_hash,
+            "datasets": list(_index_cache.keys()),
         })
     except Exception as e:
         return json.dumps({"status": "error", "error": str(e)})
