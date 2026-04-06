@@ -23,7 +23,7 @@ try:
     import mcp  # noqa: F401
 except ImportError:
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-q", "mcp[cli]", "pyathena", "boto3", "pyyaml"],
+        [sys.executable, "-m", "pip", "install", "-q", "mcp[cli]", "pyathena", "boto3", "pyyaml", "pandas"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
 
@@ -132,10 +132,17 @@ def query_athena(sql: str) -> str:
     Args:
         sql: The SQL SELECT query to execute. Use fully qualified table names
              for cross-database queries (e.g., trayaprod.engagements_vw).
-             Available databases: trayaprod, tatvav2db_public, traya_marts_ez, google_analytics.
-             IMPORTANT: Only SELECT queries are supported. Do not use SHOW, USE, DESCRIBE, or DDL.
-             Always include LIMIT to avoid scanning too much data.
-             PII columns (email, phone, name, address) cannot be in SELECT — use case_id/user_id instead.
+             Available databases: trayaprod, tatvav2db_public, traya_marts_ez, google_analytics, facebook_ads.
+             IMPORTANT:
+             - Only SELECT queries are supported. No SHOW, USE, DESCRIBE, or DDL.
+             - Always include LIMIT to avoid scanning too much data.
+             - PII columns (email, phone, name, address) cannot be in SELECT — use case_id/user_id instead.
+             - PREFER aggregated queries (GROUP BY, COUNT, SUM, AVG) over raw row selects.
+               Bad:  SELECT * FROM orders WHERE activity_date >= '2026-03-01' LIMIT 1000
+               Good: SELECT activity_date, COUNT(*) as orders, SUM(total_amount) as revenue
+                     FROM orders WHERE activity_date >= '2026-03-01' GROUP BY activity_date
+             - Use sample_table to preview raw data instead of SELECT * with large LIMIT.
+             - Keep result sets small — aggregate first, drill down only if needed.
 
     Returns:
         JSON string with columns and rows, or error message.
@@ -198,6 +205,58 @@ def list_athena_tables(database: str = "") -> str:
         cur.close()
         conn.close()
         return json.dumps({"database": db, "tables": tables, "count": len(tables)})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def sample_table(table: str, database: str = "", limit: int = 10) -> str:
+    """Get a sample of the most recent rows from a table based on activity_date.
+
+    Use this BEFORE writing analytical queries to understand actual data values,
+    formats, and patterns. Much cheaper than scanning the full table.
+
+    Args:
+        table: Table name (e.g., engagements_vw, orders_vw).
+        database: Database name. Defaults to trayaprod.
+        limit: Number of rows to return (default 10, max 50).
+    """
+    try:
+        import pandas as pd
+
+        db = database or ATHENA_CONFIG["database"]
+        limit = min(limit, 50)
+        fqn = f"{db}.{table}"
+
+        conn = _get_connection()
+        cur = conn.cursor()
+
+        # Try activity_date first, fall back to no ordering
+        sql = f"SELECT * FROM {fqn} WHERE activity_date = (SELECT MAX(activity_date) FROM {fqn}) LIMIT {limit}"
+        try:
+            cur.execute(sql)
+        except Exception:
+            cur.execute(f"SELECT * FROM {fqn} LIMIT {limit}")
+
+        columns = [desc[0] for desc in cur.description] if cur.description else []
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        columns, rows, redacted = _redact_pii(columns, rows)
+        df = pd.DataFrame(rows, columns=columns)
+
+        result = {
+            "table": fqn,
+            "row_count": len(df),
+            "columns": list(df.columns),
+            "dtypes": {col: str(dt) for col, dt in df.dtypes.items()},
+            "sample": df.to_dict(orient="records"),
+        }
+        if redacted:
+            result["redacted_columns"] = redacted
+        return json.dumps(result, default=str)
+
     except Exception as e:
         return json.dumps({"error": str(e)})
 

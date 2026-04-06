@@ -37,6 +37,11 @@ Check: nulls >20% = BLOCKER, duplicates, date range coverage, sanity (rates 0-10
 
 **Silent guardrails:** No PII in SELECT. Always filter on partition column. Use mart tables over raw. Check UTC vs IST.
 
+**Query strategy:**
+- **Sample first:** Call `sample_table` on unfamiliar tables to understand actual values/formats before writing queries.
+- **Prefer aggregated queries:** Use GROUP BY with COUNT, SUM, AVG for analysis. Use raw row selects only when you specifically need individual records (e.g., inspecting outliers, validating edge cases).
+- **Deep dive with queries:** Do multiple focused aggregation queries to drill into dimensions rather than one large raw data pull.
+
 **L1:** Single query, return number with context ("12,450 users in March, up 8% from Feb").
 
 **L2:** Query + one chart. Give 2-3 sentences interpreting it. End with "Want to break this down by [dimension]?"
