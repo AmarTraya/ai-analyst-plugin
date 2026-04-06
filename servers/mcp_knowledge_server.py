@@ -52,6 +52,7 @@ def _load_config() -> dict:
     repo_url = os.environ.get("KNOWLEDGE_REPO_URL", "").strip()
     local_path = os.environ.get("KNOWLEDGE_LOCAL_PATH", "").strip()
     branch = os.environ.get("KNOWLEDGE_REPO_BRANCH", "").strip() or "main"
+    github_token = os.environ.get("KNOWLEDGE_GITHUB_TOKEN", "").strip()
     datasets_str = os.environ.get("KNOWLEDGE_DATASETS", "").strip()
     datasets = [d.strip() for d in datasets_str.split(",") if d.strip()] if datasets_str else []
 
@@ -61,6 +62,8 @@ def _load_config() -> dict:
             config["repo_url"] = repo_url
         if local_path:
             config["local_path"] = local_path
+        if github_token:
+            config["github_token"] = github_token
         return config
 
     # Fallback: JSON config file (for backward compat / manual setup)
@@ -85,6 +88,14 @@ def _repo_dir() -> Path:
 # ---------------------------------------------------------------------------
 
 
+def _auth_url(repo_url: str, token: str) -> str:
+    """Inject GitHub token into an HTTPS URL for private repo access."""
+    if token and repo_url.startswith("https://"):
+        # https://github.com/... -> https://<token>@github.com/...
+        return repo_url.replace("https://", f"https://{token}@", 1)
+    return repo_url
+
+
 def _clone_or_pull() -> tuple[bool, str]:
     """Clone the repo if not cached, or pull latest changes.
 
@@ -94,20 +105,30 @@ def _clone_or_pull() -> tuple[bool, str]:
     config = _load_config()
     repo_url = config.get("repo_url", "")
     branch = config.get("branch", "main")
+    token = config.get("github_token", "")
 
     if not repo_url:
         return False, ""
 
+    auth_url = _auth_url(repo_url, token)
     repo_path = _repo_dir()
 
+    # Prevent token leaking into git config / logs
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+
     if (repo_path / ".git").is_dir():
+        # Update remote URL in case token changed
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", auth_url],
+            cwd=repo_path, capture_output=True, text=True, env=env,
+        )
         # Pull
         old_hash = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True
         ).strip()
         subprocess.run(
             ["git", "pull", "--ff-only", "origin", branch],
-            cwd=repo_path, capture_output=True, text=True,
+            cwd=repo_path, capture_output=True, text=True, env=env,
         )
         new_hash = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True
@@ -117,8 +138,8 @@ def _clone_or_pull() -> tuple[bool, str]:
         # Clone
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         subprocess.run(
-            ["git", "clone", "--branch", branch, "--depth", "1", repo_url, str(repo_path)],
-            capture_output=True, text=True, check=True,
+            ["git", "clone", "--branch", branch, "--depth", "1", auth_url, str(repo_path)],
+            capture_output=True, text=True, check=True, env=env,
         )
         commit_hash = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True

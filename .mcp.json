@@ -8,7 +8,8 @@
         "KNOWLEDGE_REPO_URL": "${user_config.knowledge_repo_url}",
         "KNOWLEDGE_REPO_BRANCH": "${user_config.knowledge_repo_branch}",
         "KNOWLEDGE_LOCAL_PATH": "${user_config.knowledge_local_path}",
-        "KNOWLEDGE_DATASETS": "${user_config.knowledge_datasets}"
+        "KNOWLEDGE_DATASETS": "${user_config.knowledge_datasets}",
+        "KNOWLEDGE_GITHUB_TOKEN": "${user_config.knowledge_github_token}"
       }
     },
     "athena": {

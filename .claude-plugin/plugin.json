@@ -25,7 +25,8 @@
         "KNOWLEDGE_REPO_URL": "${user_config.knowledge_repo_url}",
         "KNOWLEDGE_REPO_BRANCH": "${user_config.knowledge_repo_branch}",
         "KNOWLEDGE_LOCAL_PATH": "${user_config.knowledge_local_path}",
-        "KNOWLEDGE_DATASETS": "${user_config.knowledge_datasets}"
+        "KNOWLEDGE_DATASETS": "${user_config.knowledge_datasets}",
+        "KNOWLEDGE_GITHUB_TOKEN": "${user_config.knowledge_github_token}"
       }
     },
     "athena": {
@@ -61,9 +62,15 @@
     },
     "knowledge_datasets": {
       "title": "Dataset IDs",
-      "description": "Comma-separated dataset IDs to index (e.g., traya-health)",
+      "description": "Comma-separated dataset IDs to index (e.g., traya-health). Leave empty to auto-discover from repo.",
       "type": "string",
       "sensitive": false
+    },
+    "knowledge_github_token": {
+      "title": "GitHub Token",
+      "description": "Personal access token for private knowledge repos. Leave empty for public repos or SSH.",
+      "type": "string",
+      "sensitive": true
     },
     "aws_profile": {
       "title": "AWS Profile",
