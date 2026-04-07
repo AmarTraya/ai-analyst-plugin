@@ -43,7 +43,8 @@ except ImportError:
 
 import httpx
 import pandas as pd
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
+from pydantic import BaseModel, Field
 
 mcp_server = FastMCP("superset-query")
 
@@ -454,6 +455,235 @@ def test_superset_connection() -> str:
         return _error_from_http(e)
     except Exception as e:
         return json.dumps({"status": "error", "error": str(e), "base_url": CONFIG["base_url"]})
+
+
+# ---------------------------------------------------------------------------
+# Interactive setup via MCP Elicitation
+# ---------------------------------------------------------------------------
+
+class SupersetURLConfig(BaseModel):
+    """Collect Superset URL and auth method."""
+    base_url: str = Field(description="Superset URL (e.g., http://localhost:8088)")
+    auth_method: str = Field(description="How do you authenticate?", json_schema_extra={"enum": ["username_password", "google_sso", "api_key"]})
+
+
+class SupersetCredentials(BaseModel):
+    """Collect username/password for DB auth."""
+    username: str = Field(description="Superset username")
+    password: str = Field(description="Superset password")
+
+
+class SupersetAPIKeyInput(BaseModel):
+    """Collect API key."""
+    api_key: str = Field(description="Paste your Superset API key (starts with sst_)")
+
+
+class SupersetDatabaseChoice(BaseModel):
+    """Collect default database and schema."""
+    database_id: int = Field(description="Database ID to use as default")
+    schema_name: str = Field(description="Default schema (e.g., trayaprod)")
+
+
+@mcp_server.tool()
+async def connect_superset(ctx: Context) -> str:
+    """Interactive Superset setup — authenticate, discover databases, and configure.
+
+    Walks you through connecting to Superset step by step using interactive
+    prompts. Supports username/password, Google SSO, and API key auth.
+    """
+    global CONFIG, _auth, _http
+
+    # Step 1: Get URL and auth method
+    await ctx.info("Starting Superset setup...")
+    result = await ctx.elicit(
+        "Let's connect to Superset. Enter your Superset URL and how you log in.",
+        SupersetURLConfig,
+    )
+    if result.action != "accept" or not result.data:
+        return json.dumps({"status": "cancelled", "message": "Setup cancelled."})
+
+    base_url = result.data.base_url.rstrip("/")
+    auth_method = result.data.auth_method
+
+    # Verify URL is reachable
+    try:
+        test_resp = _http.get(f"{base_url}/health", timeout=10)
+        if test_resp.status_code != 200:
+            # Try /api/v1/health as fallback
+            test_resp = _http.get(f"{base_url}/api/v1/health", timeout=10)
+    except Exception as e:
+        return json.dumps({"status": "error", "message": f"Cannot reach {base_url}: {e}"})
+
+    await ctx.info(f"Superset at {base_url} is reachable.")
+
+    # Step 2: Authenticate based on method
+    api_key = ""
+    username = ""
+
+    if auth_method == "api_key":
+        # User already has a key
+        key_result = await ctx.elicit(
+            "Paste your Superset API key.",
+            SupersetAPIKeyInput,
+        )
+        if key_result.action != "accept" or not key_result.data:
+            return json.dumps({"status": "cancelled"})
+        api_key = key_result.data.api_key
+
+    elif auth_method == "google_sso":
+        # Open browser for Google login, then guide to API key creation
+        import uuid
+        elicit_id = f"superset-oauth-{uuid.uuid4().hex[:8]}"
+
+        await ctx.elicit_url(
+            "Sign in to Superset with Google. After logging in, I'll guide you to create an API key.",
+            f"{base_url}/login/",
+            elicit_id,
+        )
+
+        await ctx.info("Now let's create an API key for persistent access.")
+
+        # Open the API key creation page
+        elicit_id2 = f"superset-apikey-{uuid.uuid4().hex[:8]}"
+        await ctx.elicit_url(
+            "In Superset, go to Settings → API Keys → + Create. Name it 'ai-analyst-plugin', copy the key, then come back.",
+            f"{base_url}/user/profile/",
+            elicit_id2,
+        )
+
+        # Collect the key
+        key_result = await ctx.elicit(
+            "Paste the API key you just created (starts with sst_).",
+            SupersetAPIKeyInput,
+        )
+        if key_result.action != "accept" or not key_result.data:
+            return json.dumps({"status": "cancelled"})
+        api_key = key_result.data.api_key
+
+    elif auth_method == "username_password":
+        # Collect credentials and auto-create API key
+        cred_result = await ctx.elicit(
+            "Enter your Superset username and password.",
+            SupersetCredentials,
+        )
+        if cred_result.action != "accept" or not cred_result.data:
+            return json.dumps({"status": "cancelled"})
+
+        username = cred_result.data.username
+        password = cred_result.data.password
+
+        # Login and create API key automatically
+        await ctx.info("Logging in and creating API key...")
+        try:
+            login_resp = _http.post(
+                f"{base_url}/api/v1/security/login",
+                json={"username": username, "password": password, "provider": "db", "refresh": True},
+            )
+            login_resp.raise_for_status()
+            access_token = login_resp.json()["access_token"]
+
+            # Get CSRF token
+            csrf_resp = _http.get(
+                f"{base_url}/api/v1/security/csrf_token/",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            csrf_resp.raise_for_status()
+            csrf_token = csrf_resp.json()["result"]
+
+            # Create API key
+            key_resp = _http.post(
+                f"{base_url}/api/v1/security/api_keys/",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "X-CSRFToken": csrf_token,
+                    "Content-Type": "application/json",
+                    "Referer": base_url,
+                },
+                json={"name": "ai-analyst-plugin"},
+            )
+            if key_resp.status_code < 400:
+                key_data = key_resp.json()
+                api_key = key_data.get("result", {}).get("key", "")
+                if api_key:
+                    await ctx.info(f"API key created automatically: {api_key[:10]}...")
+
+            # Fall back to username/password if API key creation not supported
+            if not api_key:
+                await ctx.info("API key creation not available on this Superset version. Using username/password auth.")
+
+        except httpx.HTTPStatusError as e:
+            return json.dumps({"status": "error", "message": f"Login failed: {e.response.text[:200]}"})
+
+    # Step 3: Update config and test connection
+    CONFIG["base_url"] = base_url
+    if api_key:
+        CONFIG["api_key"] = api_key
+        CONFIG["username"] = ""
+        CONFIG["password"] = ""
+    else:
+        CONFIG["username"] = username
+        CONFIG["password"] = password
+        CONFIG["api_key"] = ""
+
+    _auth = _AuthManager(CONFIG)
+
+    # Verify auth works
+    try:
+        headers = _auth.get_headers(_http)
+        me_resp = _http.get(f"{base_url}/api/v1/me/", headers=headers)
+        me_resp.raise_for_status()
+        user_info = me_resp.json().get("result", {})
+        await ctx.info(f"Authenticated as: {user_info.get('username', 'unknown')}")
+    except Exception as e:
+        return json.dumps({"status": "error", "message": f"Authentication failed: {e}"})
+
+    # Step 4: Discover databases
+    try:
+        db_resp = _request("GET", "/api/v1/database/", params={"q": "(page_size:100)"})
+        databases = db_resp.get("result", [])
+        db_list = "\n".join(
+            f"  {db.get('id')}: {db.get('database_name')} ({db.get('backend', 'unknown')})"
+            for db in databases
+        )
+        await ctx.info(f"Available databases:\n{db_list}")
+    except Exception:
+        databases = []
+
+    # Step 5: Choose default database and schema
+    db_result = await ctx.elicit(
+        f"Choose your default database ID and schema.\n\nAvailable databases:\n{db_list if databases else '(none found)'}",
+        SupersetDatabaseChoice,
+    )
+    if db_result.action == "accept" and db_result.data:
+        CONFIG["database_id"] = db_result.data.database_id
+        CONFIG["schema"] = db_result.data.schema_name
+
+    # Step 6: Test with a real query
+    try:
+        test_query = "SELECT 1 as connected"
+        _request("POST", "/api/v1/sqllab/execute/", json_data={
+            "database_id": CONFIG["database_id"],
+            "sql": test_query,
+            "schema": CONFIG["schema"],
+            "timeout": 10,
+        })
+        await ctx.info("Test query successful — connection is working!")
+    except Exception as e:
+        await ctx.info(f"Test query failed: {e}. You may need to check the database ID or schema.")
+
+    # Return config summary for the user to save in plugin settings
+    config_summary = {
+        "status": "connected",
+        "message": "Superset is configured! Update your plugin settings with these values:",
+        "config": {
+            "superset_url": CONFIG["base_url"],
+            "superset_api_key": f"{api_key[:10]}..." if api_key else "(using username/password)",
+            "superset_database_id": str(CONFIG["database_id"]),
+            "superset_schema": CONFIG["schema"],
+        },
+        "user": user_info.get("username", ""),
+    }
+    return json.dumps(config_summary, default=str)
 
 
 if __name__ == "__main__":
