@@ -101,6 +101,48 @@ Cowork runs in a sandbox and cannot access local AWS credentials or database pas
 
 4. Restart Claude Desktop. Three tools become available: `query_athena`, `list_athena_tables`, `describe_athena_table`.
 
+**For Superset (self-hosted or cloud):**
+
+Superset acts as a unified data layer with authentication (Google OAuth / LDAP / API key), RBAC, and row-level security. Works with any database Superset can connect to (Athena, Postgres, ClickHouse, BigQuery, etc.).
+
+Three auth options:
+
+**Option A: API Key (recommended)** — works with any Superset auth backend including Google OAuth.
+1. Log into Superset (via Google, LDAP, or username/password)
+2. Go to Settings → API Keys → Create new key
+3. Copy the key (starts with `sst_`)
+4. Fill in plugin config:
+   - Superset URL: `http://localhost:8088` (or your instance URL)
+   - Superset API Key: `sst_...`
+   - Superset Database ID: (find via Superset → Data → Databases, use the ID number)
+   - Superset Schema: `trayaprod` (or your default schema)
+
+**Option B: Username/Password** — for DB auth or LDAP.
+1. Fill in plugin config:
+   - Superset URL: `http://localhost:8088`
+   - Superset Username: your username
+   - Superset Password: your password
+   - Superset Auth Provider: `db` (or `ldap`)
+   - Superset Database ID and Schema as above
+
+**Option C: Official Superset MCP (Superset 4.x+)** — if Superset has built-in MCP enabled, connect directly without this plugin's server. Configure in Claude Desktop:
+```json
+{
+  "mcpServers": {
+    "superset": {
+      "url": "http://localhost:8088/mcp",
+      "headers": {
+        "Authorization": "Bearer sst_your_api_key"
+      }
+    }
+  }
+}
+```
+
+After setup, verify with: "test superset connection" — this calls `test_superset_connection` to confirm auth and list available databases.
+
+Tools available: `query_superset`, `sample_superset_table`, `list_superset_tables`, `describe_superset_table`, `list_superset_databases`, `test_superset_connection`.
+
 **For ClickHouse:**
 
 Users can use the community `mcp-clickhouse` server:

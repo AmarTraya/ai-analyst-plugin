@@ -554,3 +554,127 @@ def schema_to_markdown(schema_dict):
         lines.append("")
 
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Superset MCP response → DataFrame
+# ---------------------------------------------------------------------------
+
+# PII columns that must never appear in query results
+_PII_COLUMNS = {
+    "email", "phone_number", "phone", "chat_phone_number",
+    "first_name", "last_name", "name",
+    "customername", "phone_no",
+    "order_meta_shipping_address", "order_meta_billing_address",
+}
+
+
+def parse_superset_response(
+    response: dict,
+    redact_pii: bool = True,
+) -> tuple[pd.DataFrame, dict]:
+    """Convert a Superset MCP execute_sql response into a pandas DataFrame.
+
+    Handles the official Apache Superset MCP ExecuteSqlResponse format and
+    applies PII redaction. Returns a tuple of (DataFrame, metadata_dict).
+
+    Args:
+        response: The raw dict from Superset's execute_sql tool.
+            Expected keys: success, rows, columns, row_count, execution_time,
+            error, statements.
+        redact_pii: If True (default), drops PII columns from the result.
+
+    Returns:
+        (df, meta) where:
+        - df: pandas DataFrame with query results (empty if error/no data)
+        - meta: dict with keys:
+            - success: bool
+            - error: str or None
+            - row_count: int
+            - execution_time: float or None
+            - redacted_columns: list[str] — PII columns that were removed
+            - executed_sql: str — the SQL Superset actually ran (with RLS etc.)
+
+    Usage:
+        # After calling Superset MCP execute_sql tool:
+        df, meta = parse_superset_response(response)
+        if not meta["success"]:
+            print(f"Query failed: {meta['error']}")
+        else:
+            print(f"{meta['row_count']} rows in {meta['execution_time']}s")
+            print(df.head())
+    """
+    meta = {
+        "success": response.get("success", False),
+        "error": response.get("error"),
+        "row_count": response.get("row_count", 0),
+        "execution_time": response.get("execution_time"),
+        "redacted_columns": [],
+        "executed_sql": "",
+    }
+
+    # Extract executed SQL from statements (shows RLS filters applied)
+    statements = response.get("statements", [])
+    if statements:
+        meta["executed_sql"] = statements[-1].get("executed_sql", "")
+
+    if not meta["success"] or not response.get("rows"):
+        return pd.DataFrame(), meta
+
+    # Build DataFrame from rows
+    rows = response["rows"]
+    columns = []
+    if response.get("columns"):
+        columns = [
+            c["name"] if isinstance(c, dict) else c
+            for c in response["columns"]
+        ]
+
+    df = pd.DataFrame(rows, columns=columns if columns else None)
+
+    # Apply PII redaction
+    if redact_pii:
+        pii_found = [c for c in df.columns if c.lower() in _PII_COLUMNS]
+        if pii_found:
+            df = df.drop(columns=pii_found)
+            meta["redacted_columns"] = pii_found
+
+    meta["row_count"] = len(df)
+    return df, meta
+
+
+def superset_response_to_athena_format(response: dict, redact_pii: bool = True) -> str:
+    """Convert a Superset MCP response to the same JSON format as query_athena.
+
+    This allows skills that already work with the Athena server output to
+    consume Superset results without any changes.
+
+    Args:
+        response: The raw dict from Superset's execute_sql tool.
+        redact_pii: If True (default), drops PII columns.
+
+    Returns:
+        JSON string matching the Athena server format:
+        {columns, row_count, data, truncated?, redacted_columns?, notice?}
+    """
+    import json
+
+    df, meta = parse_superset_response(response, redact_pii=redact_pii)
+
+    if not meta["success"]:
+        return json.dumps({"error": meta["error"] or "Query failed"})
+
+    data = df.head(500).to_dict(orient="records")
+    result: dict = {
+        "columns": list(df.columns),
+        "row_count": len(df),
+        "data": data,
+    }
+    if meta["redacted_columns"]:
+        result["redacted_columns"] = meta["redacted_columns"]
+        result["notice"] = f"PII columns removed from results: {', '.join(meta['redacted_columns'])}"
+    if len(df) > 500:
+        result["truncated"] = True
+        result["total_rows"] = len(df)
+
+    return json.dumps(result, default=str)
