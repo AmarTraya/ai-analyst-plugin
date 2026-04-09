@@ -149,7 +149,7 @@ class _AuthManager:
 
 
 _auth = _AuthManager(CONFIG)
-_http = httpx.Client(timeout=httpx.Timeout(120.0, connect=10.0), follow_redirects=True)
+_http = httpx.Client(timeout=httpx.Timeout(120.0, connect=10.0), follow_redirects=True, verify=True, trust_env=True)
 
 
 def _request(method: str, endpoint: str, json_data: dict | None = None, params: dict | None = None) -> dict:
